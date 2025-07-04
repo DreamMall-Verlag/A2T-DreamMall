@@ -7,6 +7,7 @@ import json
 class ProtocolData:
     audio_file: str
     transcript: str
+    segments: List[Dict]  # Whisper segments with timestamps
     speakers: List[Dict]
     protocol_text: str
     metadata: Dict
@@ -35,11 +36,13 @@ class ProtocolGenerator:
         return ProtocolData(
             audio_file=audio_path,
             transcript=transcript_result["text"],
+            segments=transcript_result["segments"],
             speakers=speakers,
             protocol_text=protocol_text,
             metadata={
                 "language": transcript_result["language"],
                 "duration": transcript_result["duration"],
-                "speaker_count": len(set(s["speaker"] for s in speakers))
+                "speaker_count": len(set(s["speaker"] for s in speakers)),
+                "segments_count": len(transcript_result["segments"])
             }
         )

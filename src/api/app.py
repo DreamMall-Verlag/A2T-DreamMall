@@ -175,6 +175,7 @@ def get_job_status(job_id: str):
     if job.status == "completed" and job.result:
         response["result"] = {
             "transcript": job.result.transcript,
+            "segments": job.result.segments,
             "speakers": job.result.speakers,
             "protocol": job.result.protocol_text,
             "metadata": job.result.metadata

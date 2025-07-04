@@ -1,28 +1,174 @@
 <!-- web/index.html -->
 <!DOCTYPE html>
-<html>
+<html lang="de">
 <head>
-    <title>A2T - Audio zu Text</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A2T DreamMall - Meeting Protocol Generator</title>
     <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100">
-    <div class="container mx-auto p-8">
-        <h1 class="text-3xl font-bold mb-8">Meeting Protocol Generator</h1>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .speaker-0 { color: #3B82F6; } /* Blue */
+        .speaker-1 { color: #EF4444; } /* Red */
+        .speaker-2 { color: #10B981; } /* Green */
+        .speaker-3 { color: #F59E0B; } /* Amber */
+        .speaker-4 { color: #8B5CF6; } /* Purple */
+        .speaker-5 { color: #EC4899; } /* Pink */
+        .speaker-unknown { color: #6B7280; } /* Gray */
         
-        <div class="bg-white p-6 rounded-lg shadow-lg">
-            <input type="file" id="audioFile" accept="audio/*" 
-                   class="mb-4 p-2 border rounded">
-            <button onclick="uploadAndProcess()" 
-                    class="bg-blue-500 text-white px-4 py-2 rounded">
-                Verarbeiten
-            </button>
-            
-            <div id="status" class="mt-4"></div>
-            <div id="result" class="mt-4"></div>
+        .transcript-segment {
+            padding: 8px 12px;
+            margin: 4px 0;
+            border-left: 4px solid;
+            background: #F9FAFB;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .timestamp {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            font-family: monospace;
+        }
+        
+        .speaker-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+        
+        .loading-spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #3B82F6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">A2T DreamMall</h1>
+                    <p class="text-sm text-gray-600">Audio-zu-Text Meeting Protocol Generator</p>
+                </div>
+                <div class="text-sm text-gray-500">
+                    v1.0.0 | KI-gestützt
+                </div>
+            </div>
         </div>
-    </div>
-    
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-8">
+        
+        <!-- Upload Section -->
+        <div class="bg-white rounded-lg shadow-sm border p-6 mb-8">
+            <h2 class="text-lg font-semibold mb-4">Audio-Datei hochladen</h2>
+            
+            <div class="flex items-center space-x-4">
+                <input type="file" id="audioFile" accept="audio/*,video/*" 
+                       class="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <button onclick="uploadAndProcess()" id="uploadBtn"
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+                    🎵 Verarbeiten
+                </button>
+            </div>
+            
+            <div class="mt-4 text-sm text-gray-600">
+                Unterstützte Formate: MP3, WAV, M4A, MP4, WebM, OGG
+            </div>
+        </div>
+
+        <!-- Status Section -->
+        <div id="statusSection" class="hidden bg-white rounded-lg shadow-sm border p-6 mb-8">
+            <div class="flex items-center space-x-4">
+                <div class="loading-spinner"></div>
+                <div>
+                    <div id="statusText" class="font-medium text-gray-800"></div>
+                    <div id="progressText" class="text-sm text-gray-600"></div>
+                </div>
+            </div>
+            <div class="mt-4">
+                <div class="bg-gray-200 rounded-full h-2">
+                    <div id="progressBar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" class="hidden">
+            
+            <!-- Analysis Overview -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow-sm border p-6">
+                    <h3 class="text-sm font-medium text-gray-600 mb-2">Dauer</h3>
+                    <div id="durationDisplay" class="text-2xl font-bold text-gray-800">--:--</div>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm border p-6">
+                    <h3 class="text-sm font-medium text-gray-600 mb-2">Sprecher</h3>
+                    <div id="speakerCount" class="text-2xl font-bold text-gray-800">-</div>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm border p-6">
+                    <h3 class="text-sm font-medium text-gray-600 mb-2">Sprache</h3>
+                    <div id="languageDisplay" class="text-2xl font-bold text-gray-800">-</div>
+                </div>
+            </div>
+
+            <!-- Transcript Section -->
+            <div class="bg-white rounded-lg shadow-sm border mb-8">
+                <div class="p-6 border-b">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg font-semibold">Transkript mit Speaker-Erkennung</h2>
+                        <div class="flex items-center space-x-4">
+                            <div id="speakerLegend" class="flex items-center space-x-3 text-sm"></div>
+                            <button onclick="toggleTimestamps()" id="timestampToggle"
+                                    class="text-sm text-gray-600 hover:text-gray-800">
+                                Zeitstempel anzeigen
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div id="transcriptContent" class="p-6 max-h-96 overflow-y-auto">
+                    <!-- Transcript segments will be inserted here -->
+                </div>
+            </div>
+
+            <!-- Protocol Generation -->
+            <div class="bg-white rounded-lg shadow-sm border">
+                <div class="p-6 border-b">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg font-semibold">KI-Meeting-Protokoll</h2>
+                        <button onclick="generateProtocol()" id="protocolBtn"
+                                class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+                            🤖 Protokoll generieren
+                        </button>
+                    </div>
+                </div>
+                <div id="protocolContent" class="p-6">
+                    <div class="text-gray-500 text-center py-8">
+                        Klicken Sie auf "Protokoll generieren", um ein strukturiertes Meeting-Protokoll zu erstellen.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
     <script>
+        let currentJobData = null;
+        let showTimestamps = false;
+
         async function uploadAndProcess() {
             const fileInput = document.getElementById('audioFile');
             const file = fileInput.files[0];
@@ -31,45 +177,261 @@
                 alert('Bitte wählen Sie eine Audio-Datei aus');
                 return;
             }
+
+            // Reset UI
+            hideResults();
+            showStatus('Datei wird hochgeladen...', 0);
+
+            try {
+                // Upload
+                const formData = new FormData();
+                formData.append('audio', file);
+
+                const response = await fetch('/api/v1/transcribe', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    // Start polling
+                    pollJobStatus(result.job_id);
+                } else {
+                    throw new Error(result.error || 'Upload fehlgeschlagen');
+                }
+            } catch (error) {
+                hideStatus();
+                alert('Fehler beim Upload: ' + error.message);
+            }
+        }
+
+        async function pollJobStatus(jobId) {
+            try {
+                while (true) {
+                    const response = await fetch(`/api/v1/status/${jobId}`);
+                    const status = await response.json();
+
+                    updateStatus(status);
+
+                    if (status.status === 'completed') {
+                        currentJobData = status.result;
+                        hideStatus();
+                        showResults(status.result);
+                        break;
+                    } else if (status.status === 'failed') {
+                        hideStatus();
+                        alert('Verarbeitung fehlgeschlagen: ' + status.error);
+                        break;
+                    }
+
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                }
+            } catch (error) {
+                hideStatus();
+                alert('Fehler beim Abrufen des Status: ' + error.message);
+            }
+        }
+
+        function showStatus(text, progress) {
+            document.getElementById('statusSection').classList.remove('hidden');
+            document.getElementById('statusText').textContent = text;
+            document.getElementById('progressText').textContent = `${progress}% abgeschlossen`;
+            document.getElementById('progressBar').style.width = `${progress}%`;
+        }
+
+        function updateStatus(status) {
+            let statusText = '';
+            switch (status.status) {
+                case 'queued': statusText = 'In Warteschlange...'; break;
+                case 'processing': statusText = 'Audio wird verarbeitet...'; break;
+                default: statusText = status.status;
+            }
+            showStatus(statusText, status.progress);
+        }
+
+        function hideStatus() {
+            document.getElementById('statusSection').classList.add('hidden');
+        }
+
+        function hideResults() {
+            document.getElementById('resultsSection').classList.add('hidden');
+        }
+
+        function showResults(data) {
+            // Update metadata
+            document.getElementById('durationDisplay').textContent = formatDuration(data.metadata?.duration || 0);
+            document.getElementById('speakerCount').textContent = data.metadata?.speaker_count || 'N/A';
+            document.getElementById('languageDisplay').textContent = (data.metadata?.language || 'unknown').toUpperCase();
+
+            // Show transcript
+            displayTranscript(data);
+
+            // Show results section
+            document.getElementById('resultsSection').classList.remove('hidden');
+        }
+
+        function displayTranscript(data) {
+            const transcriptContent = document.getElementById('transcriptContent');
+            const speakerLegend = document.getElementById('speakerLegend');
+
+            let segments = [];
+            let speakers = [];
+
+            if (data.speakers && data.speakers.length > 0) {
+                // Use speaker diarization data
+                segments = data.speakers.map(segment => ({
+                    speaker: segment.speaker,
+                    text: segment.text || '',
+                    start: segment.start,
+                    end: segment.end
+                }));
+                speakers = [...new Set(data.speakers.map(s => s.speaker))];
+            } else if (data.segments && data.segments.length > 0) {
+                // Use Whisper segments with default speaker
+                segments = data.segments.map((segment, index) => ({
+                    speaker: 'Speaker_1',
+                    text: segment.text || '',
+                    start: segment.start,
+                    end: segment.end
+                }));
+                speakers = ['Speaker_1'];
+            } else {
+                // Fallback: use raw transcript
+                segments = [{
+                    speaker: 'Speaker_1',
+                    text: data.transcript || 'Kein Transkript verfügbar',
+                    start: 0,
+                    end: data.metadata?.duration || 0
+                }];
+                speakers = ['Speaker_1'];
+            }
             
-            // Upload
-            const formData = new FormData();
-            formData.append('audio', file);
+            // Create speaker legend
+            speakerLegend.innerHTML = speakers.map((speaker, index) => 
+                `<span class="speaker-badge speaker-${index}" style="background-color: ${getSpeakerColor(index)}20; color: ${getSpeakerColor(index)};">
+                    ${speaker}
+                </span>`
+            ).join('');
+
+            // Create transcript segments
+            transcriptContent.innerHTML = segments.map((segment, index) => {
+                const speakerIndex = speakers.indexOf(segment.speaker);
+                const speakerColor = getSpeakerColor(speakerIndex);
+                
+                return `
+                    <div class="transcript-segment" style="border-left-color: ${speakerColor};">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="speaker-badge" style="background-color: ${speakerColor}20; color: ${speakerColor};">
+                                ${segment.speaker}
+                            </span>
+                            <span class="timestamp ${showTimestamps ? '' : 'hidden'}">
+                                ${formatTime(segment.start)} - ${formatTime(segment.end)}
+                            </span>
+                        </div>
+                        <div class="text-gray-800">${segment.text}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function getSpeakerColor(index) {
+            const colors = ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899'];
+            return colors[index % colors.length] || '#6B7280';
+        }
+
+        function formatTime(seconds) {
+            if (!seconds && seconds !== 0) return '--:--';
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function formatDuration(seconds) {
+            if (!seconds && seconds !== 0) return '--:--';
+            const hours = Math.floor(seconds / 3600);
+            const mins = Math.floor((seconds % 3600) / 60);
+            const secs = Math.floor(seconds % 60);
             
-            const response = await fetch('/api/v1/transcribe', {
-                method: 'POST',
-                body: formData
+            if (hours > 0) {
+                return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function toggleTimestamps() {
+            showTimestamps = !showTimestamps;
+            const timestamps = document.querySelectorAll('.timestamp');
+            const button = document.getElementById('timestampToggle');
+            
+            timestamps.forEach(ts => {
+                if (showTimestamps) {
+                    ts.classList.remove('hidden');
+                } else {
+                    ts.classList.add('hidden');
+                }
             });
             
-            const result = await response.json();
-            
-            // Status polling
-            pollJobStatus(result.job_id);
+            button.textContent = showTimestamps ? 'Zeitstempel ausblenden' : 'Zeitstempel anzeigen';
         }
-        
-        async function pollJobStatus(jobId) {
-            const statusDiv = document.getElementById('status');
-            const resultDiv = document.getElementById('result');
+
+        async function generateProtocol() {
+            if (!currentJobData) return;
+
+            const protocolBtn = document.getElementById('protocolBtn');
+            const protocolContent = document.getElementById('protocolContent');
+
+            // Update button state
+            protocolBtn.disabled = true;
+            protocolBtn.innerHTML = '🤖 Wird generiert...';
             
-            while (true) {
-                const response = await fetch(`/api/v1/status/${jobId}`);
-                const status = await response.json();
-                
-                statusDiv.innerHTML = `Status: ${status.status} (${status.progress}%)`;
-                
-                if (status.status === 'completed') {
-                    resultDiv.innerHTML = `
-                        <h3 class="font-bold">Protokoll:</h3>
-                        <pre class="bg-gray-100 p-4 rounded">${status.result.protocol}</pre>
+            // Show loading
+            protocolContent.innerHTML = `
+                <div class="flex items-center justify-center py-8">
+                    <div class="loading-spinner mr-4"></div>
+                    <div class="text-gray-600">KI-Protokoll wird generiert...</div>
+                </div>
+            `;
+
+            try {
+                // The protocol should already be in the data
+                if (currentJobData.protocol) {
+                    protocolContent.innerHTML = `
+                        <div class="prose max-w-none">
+                            <pre class="whitespace-pre-wrap bg-gray-50 p-4 rounded-lg border text-sm leading-relaxed">${currentJobData.protocol}</pre>
+                        </div>
+                        <div class="mt-4 flex justify-end">
+                            <button onclick="downloadProtocol()" class="text-sm text-blue-600 hover:text-blue-800">
+                                📄 Als Text-Datei herunterladen
+                            </button>
+                        </div>
                     `;
-                    break;
-                } else if (status.status === 'failed') {
-                    statusDiv.innerHTML = `Fehler: ${status.error}`;
-                    break;
+                } else {
+                    throw new Error('Kein Protokoll verfügbar');
                 }
-                
-                await new Promise(resolve => setTimeout(resolve, 2000));
+            } catch (error) {
+                protocolContent.innerHTML = `
+                    <div class="text-red-600 text-center py-8">
+                        Fehler beim Generieren des Protokolls: ${error.message}
+                    </div>
+                `;
             }
+
+            // Reset button
+            protocolBtn.disabled = false;
+            protocolBtn.innerHTML = '🤖 Protokoll generieren';
+        }
+
+        function downloadProtocol() {
+            if (!currentJobData?.protocol) return;
+
+            const blob = new Blob([currentJobData.protocol], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `meeting-protokoll-${new Date().toISOString().split('T')[0]}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
         }
     </script>
 </body>
