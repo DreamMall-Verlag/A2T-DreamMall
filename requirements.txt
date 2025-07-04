@@ -1,0 +1,34 @@
+# A2T-Service Requirements
+# Core Framework
+flask==3.1.0
+flask-cors==5.0.0
+python-dotenv==1.0.1
+requests==2.32.3
+
+# Audio Processing
+pydub==0.25.1
+librosa==0.10.2
+soundfile==0.12.1
+
+# AI/ML Dependencies (KRITISCHE Reihenfolge!)
+# PyTorch CPU-Version für Stabilität
+--index-url https://download.pytorch.org/whl/cpu
+torch==2.5.1+cpu
+torchaudio==2.5.1+cpu
+
+# Whisper für Transkription
+openai-whisper==20240930
+
+# PyAnnote für Speaker Diarization (requires Python 3.10/3.11)
+pyannote.audio==3.3.2
+
+# Ollama Client
+ollama==0.4.5
+
+# Supabase Integration
+psycopg2-binary==2.9.10
+supabase==2.10.0
+
+# Development Tools
+pytest==8.3.4
+black==24.10.0

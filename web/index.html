@@ -1,0 +1,76 @@
+<!-- web/index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>A2T - Audio zu Text</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-8">
+        <h1 class="text-3xl font-bold mb-8">Meeting Protocol Generator</h1>
+        
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            <input type="file" id="audioFile" accept="audio/*" 
+                   class="mb-4 p-2 border rounded">
+            <button onclick="uploadAndProcess()" 
+                    class="bg-blue-500 text-white px-4 py-2 rounded">
+                Verarbeiten
+            </button>
+            
+            <div id="status" class="mt-4"></div>
+            <div id="result" class="mt-4"></div>
+        </div>
+    </div>
+    
+    <script>
+        async function uploadAndProcess() {
+            const fileInput = document.getElementById('audioFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Bitte wählen Sie eine Audio-Datei aus');
+                return;
+            }
+            
+            // Upload
+            const formData = new FormData();
+            formData.append('audio', file);
+            
+            const response = await fetch('/api/v1/transcribe', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            // Status polling
+            pollJobStatus(result.job_id);
+        }
+        
+        async function pollJobStatus(jobId) {
+            const statusDiv = document.getElementById('status');
+            const resultDiv = document.getElementById('result');
+            
+            while (true) {
+                const response = await fetch(`/api/v1/status/${jobId}`);
+                const status = await response.json();
+                
+                statusDiv.innerHTML = `Status: ${status.status} (${status.progress}%)`;
+                
+                if (status.status === 'completed') {
+                    resultDiv.innerHTML = `
+                        <h3 class="font-bold">Protokoll:</h3>
+                        <pre class="bg-gray-100 p-4 rounded">${status.result.protocol}</pre>
+                    `;
+                    break;
+                } else if (status.status === 'failed') {
+                    statusDiv.innerHTML = `Fehler: ${status.error}`;
+                    break;
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+        }
+    </script>
+</body>
+</html>
