@@ -1,54 +1,452 @@
-# A2T DreamMall - Audio-zu-Text Meeting Protocol Generator
+# A2T-DreamMall Audio-zu-Text Meeting Protocol Generator
 
-## 🎯 Projektbeschreibung
+## 🎯 Überblick
 
-**A2T DreamMall** ist ein lokales KI-Tool zur automatischen Generierung von Meeting-Protokollen aus Audio-Aufnahmen. Das System konvertiert Audio-Dateien in strukturierte, professionelle Protokolle mit Speaker-Erkennung und intelligenter Zusammenfassung.
+**A2T-DreamMall** ist ein vollständig funktionsfähiger, lokaler Audio-zu-Text Service, der Audiodateien von Meetings automatisch in strukturierte Protokolle umwandelt. Das System kombiniert modernste KI-Technologien für Transkription, Speaker Diarization und intelligente Protokoll-Generierung.
+
+### ✨ Hauptmerkmale
+- **🎵 Audio-Processing**: Whisper AI für hochqualitative deutsche Sprachtranskription
+- **🗣️ Speaker Diarization**: Automatische Sprecher-Erkennung mit PyAnnote.Audio
+- **🤖 KI-Protokoll-Generierung**: Strukturierte Meeting-Protokolle via Ollama LLM
+- **🌐 Moderne Web-UI**: Professionelle, responsive Benutzeroberfläche
+- **📡 REST API**: Vollständige Integration in externe Systeme
+- **🔒 100% Lokal**: Keine Cloud-Abhängigkeiten, vollständiger Datenschutz
 
 ### Kern-Funktionen
-1. **Audio-Preprocessing**: Rauschunterdrückung, Normalisierung, Format-Konvertierung
+1. **Audio-Preprocessing**: FFmpeg + Librosa für robuste Audio-Verarbeitung
 2. **Speaker Diarization**: Automatische Sprecher-Erkennung und -Trennung
 3. **Speech-to-Text**: Präzise Transkription mit Zeitstempeln
 4. **Protocol Generation**: Intelligente Strukturierung zu Meeting-Protokollen
 5. **Lokale Verarbeitung**: 100% offline, keine Cloud-Abhängigkeiten
 
-### Nutzungs-Modi
-- **🌐 Web-Anwendung**: Browser-basierte Benutzeroberfläche (localhost)
-- **🔌 REST API**: Programmatische Integration in andere Systeme
-- **📱 Desktop App**: Standalone-Anwendung (geplant)
-- **🔧 CLI Tool**: Kommandozeilen-Interface für Batch-Processing (geplant)
+---
+
+## 🚀 Status: VOLLSTÄNDIG FUNKTIONSFÄHIG
+
+**Current Version:** 1.0.0  
+**Status:** ✅ Production Ready  
+**GitHub:** https://github.com/DreamMall-Verlag/A2T-DreamMall
+
+### ✅ Erfolgreich implementierte Features
+
+#### 🎵 Audio-Processing
+- **Whisper AI** mit deutschen Sprachmodellen
+- **FFmpeg + Librosa** Integration mit Fallback-Mechanismen
+- **Robuste Fehlerbehandlung** und automatische Audio-Optimierung
+- **Multi-Format-Support**: MP3, WAV, M4A, MP4, WebM, OGG
+
+#### 🗣️ Speaker Diarization
+- **PyAnnote.Audio** für automatische Sprecher-Erkennung
+- **HuggingFace Integration** mit Token-basierter Authentifizierung
+- **Graceful Fallback** wenn Speaker Diarization nicht verfügbar
+- **Speaker-Farbcodierung** mit bis zu 6 verschiedenen Farben
+
+#### 🤖 Intelligente Protokoll-Generierung
+- **Ollama LLM Integration** für lokale KI-Verarbeitung
+- **Deutsche Sprachoptimierung** für Business-Kontext
+- **Automatische Extraktion** von Agenda-Punkten, Entscheidungen, Action Items
+- **On-Demand-Generierung** per Klick (nicht automatisch)
+
+#### 🌐 Moderne Web-Interface
+- **🎨 Professionelles Design** mit Tailwind CSS
+- **📊 Dashboard-Übersicht**: Dauer, Speaker-Anzahl, erkannte Sprache
+- **� Transkript-Anzeige** mit Zeitstempeln und Speaker-Farbcodierung
+- **🎛️ Interactive Features**: Zeitstempel ein/ausblenden, Speaker-Legend
+- **🤖 KI-Protokoll-Button** für On-Demand-Protokoll-Generierung
+- **📄 Download-Funktion** für Protokolle als Text-Datei
+- **⏱️ Echtzeit-Status-Updates** mit Progress Bar und Loading-Animations
+
+#### � REST API
+- **Asynchrone Job-Verarbeitung** mit Background-Tasks
+- **Vollständige API-Endpunkte** für externe Integration
+- **Real-time Status-Monitoring** über WebSocket-ähnliche Polling
+- **Erweiterte Datenstrukturen** mit Segmenten und Metadaten
 
 ---
 
-## 🏗️ Technische Architektur
+## 🛠️ Technologie-Stack
+
+```
+├── Backend: Flask + Python 3.10/3.11
+├── AI/ML: Whisper, PyAnnote, Ollama, Librosa
+├── Audio: FFmpeg, Librosa, PyDub
+├── Frontend: HTML5, JavaScript, Tailwind CSS
+├── Deployment: Docker, Virtual Environment
+└── Integration: DreamMall Backend/Frontend Ready
+```
 
 ### Pipeline-Übersicht
 ```
-Audio Input → Audio Optimization → Speaker Diarization → Transcription → Protocol Generation
+Audio Input → Audio Optimization → Speaker Diarization → Whisper Transcription → Ollama Protocol Generation → Structured Output
 ```
-
-### Komponenten-Stack
-- **Audio Processing**: pydub, ffmpeg, librosa, soundfile
-- **AI Models**: Whisper (OpenAI), pyannote.audio (Speaker Diarization)
-- **LLM Integration**: Ollama (lokale LLMs für Protokoll-Generierung)
-- **Backend**: Python Flask (REST API + Web Server)
-- **Frontend**: React/Vue.js oder einfaches HTML/CSS/JS
-- **API**: RESTful Endpoints für externe Integration
 
 ---
 
-## 📂 Projektstruktur (Neu & Sauber)
+## 🚀 Quick Start
+
+### 1. Installation
+```bash
+# Repository klonen
+git clone https://github.com/DreamMall-Verlag/A2T-DreamMall.git
+cd A2T-DreamMall
+
+# Virtual Environment erstellen
+python -m venv venv
+venv\Scripts\activate  # Windows
+# source venv/bin/activate  # Linux/Mac
+
+# Dependencies installieren
+pip install -r requirements.txt
+```
+
+### 2. Konfiguration
+```bash
+# .env Datei erstellen
+cp .env.example .env
+
+# Optional: HuggingFace Token für Speaker Diarization hinzufügen
+# HUGGINGFACE_TOKEN=your_token_here
+```
+
+### 3. Server starten
+```bash
+# Flask Development Server
+python src/api/app.py
+
+# Server läuft auf: http://localhost:5000
+```
+
+### 4. Verwendung
+
+#### 🌐 Web-Interface
+- **Web-UI**: http://localhost:5000/web
+- **Health Check**: http://localhost:5000/health
+- **API Documentation**: http://localhost:5000/ (Root)
+
+#### 📡 REST API
+```bash
+# Audio hochladen und verarbeiten
+curl -X POST -F "audio=@your-audio-file.mp3" http://localhost:5000/api/v1/transcribe
+
+# Job-Status prüfen
+curl http://localhost:5000/api/v1/status/{job_id}
+```
+
+---
+
+## 🎨 Web-Interface Features
+
+### 📊 Dashboard-Übersicht
+- **Dauer**: Automatische Erkennung der Audio-Länge
+- **Speaker**: Anzahl identifizierter Sprecher
+- **Sprache**: Erkannte Sprache (DE/EN/etc.)
+
+### 📝 Transkript-Anzeige
+- **Zeitstempel**: Ein-/ausblendbar per Klick
+- **Speaker-Farbcodierung**: Bis zu 6 verschiedene Farben pro Sprecher
+- **Speaker-Legend**: Übersicht aller identifizierten Sprecher
+- **Scrollbare Segmente**: Übersichtliche Darstellung langer Gespräche
+
+### 🤖 KI-Protokoll-Generierung
+- **On-Demand**: Protokoll wird erst nach Klick generiert
+- **Loading-Animation**: Visuelles Feedback während Generierung
+- **Download-Funktion**: Protokoll als .txt-Datei herunterladen
+- **Strukturierte Ausgabe**: Agenda, Entscheidungen, Action Items
+
+---
+
+## 📂 Projektstruktur
 
 ```
-a2t-dreammall/
-├── README.md                    # Hauptdokumentation
-├── LICENSE                      # MIT License
+A2T-Service/
+├── README.md                    # Diese Dokumentation
+├── README_STATUS.md             # Detaillierte Feature-Dokumentation
 ├── requirements.txt             # Python Dependencies
-├── setup.py                     # Package Setup
-├── .gitignore                   # Git Exclusions
 ├── .env.example                 # Environment Template
+├── .gitignore                   # Git Exclusions
 │
-├── docs/                        # 📖 Dokumentation
-│   ├── INSTALLATION.md          # Installationsanleitung
+├── src/                         # 🔒 Quellcode
+│   ├── api/                     # Flask API Server
+│   │   └── app.py               # Hauptanwendung mit Routing
+│   └── services/                # Service-Module
+│       ├── ai/                  # KI-Services
+│       │   ├── whisper_client.py    # Whisper Integration
+│       │   ├── diarization.py       # Speaker Diarization
+│       │   └── ollama_client.py     # Ollama LLM Client
+│       ├── audio/               # Audio-Processing
+│       │   └── processor.py     # Audio-Verarbeitung
+│       └── protocol/            # Protokoll-Generierung
+│           └── generator.py     # Protokoll-Generator
+│
+├── web/                         # 🌐 Frontend
+│   └── index.html               # Moderne Web-UI
+│
+├── temp/                        # 📁 Temporäre Dateien
+│   └── uploads/                 # Upload-Verzeichnis
+│
+└── tests/                       # 🧪 Tests
+    ├── test_components.py       # Komponenten-Tests
+    ├── test_upload.py           # Upload-Tests
+    └── test_new_ui.py           # UI-API-Tests
+```
+
+---
+
+## 📋 API-Dokumentation
+
+### Hauptendpunkte
+
+#### Audio-Upload und Verarbeitung
+```http
+POST /api/v1/transcribe
+Content-Type: multipart/form-data
+
+# Body: audio file
+# Response: {"job_id": "uuid", "status": "queued", "message": "Audio processing started"}
+```
+
+#### Status-Abfrage
+```http
+GET /api/v1/status/{job_id}
+
+# Response:
+{
+  "job_id": "uuid",
+  "status": "completed|processing|failed",
+  "progress": 100,
+  "result": {
+    "transcript": "Full transcript text",
+    "segments": [{"start": 0, "end": 5, "text": "..."}],
+    "speakers": [{"speaker": "Speaker_1", "start": 0, "end": 10, "text": "..."}],
+    "protocol": "Generated meeting protocol",
+    "metadata": {"language": "de", "duration": 120, "speaker_count": 2}
+  }
+}
+```
+
+#### System-Status
+```http
+GET /health
+
+# Response:
+{
+  "status": "healthy",
+  "components": {
+    "whisper": true,
+    "diarization": true,
+    "ollama": true
+  },
+  "active_jobs": 0,
+  "service": "A2T-DreamMall"
+}
+```
+
+---
+
+## � Beispiel-Ergebnis
+
+Das System generiert strukturierte Meeting-Protokolle wie:
+
+```markdown
+# Meeting-Protokoll
+
+## Teilnehmer
+- Vera Becker (neue Assistentin)
+- Mia Storm (Designerin)
+
+## Agenda-Punkte
+- Verteilung der wichtigsten Aufgaben für neue Kollektion
+- Vertrieb, Besuch von Simon Götz
+
+## Wichtige Entscheidungen
+- Entscheidung für Baumwollstoffe bei der neuen Kollektion
+- Bestellung von Stoffmustern bis Ende nächster Woche
+
+## Action Items
+- [ ] Stoffmuster bestellen - Eva Schilling - Ende nächster Woche
+- [ ] Kontakt mit neuem Lieferanten - Frau Becker
+```
+
+---
+
+## 📋 Erfolgreiche Tests
+
+✅ **Audio-Upload**: Multi-Format-Unterstützung (MP3, WAV, M4A, MP4, WebM)  
+✅ **Deutsche Transkription**: Business-Meeting perfekt transkribiert  
+✅ **Zeitstempel-Segmente**: Präzise Navigation durch Gespräch  
+✅ **Speaker-Erkennung**: Automatische Sprecher-Identifikation  
+✅ **Protokoll-Generierung**: Strukturierte Ausgabe mit Action Items  
+✅ **Moderne Web-Interface**: Benutzerfreundliche, responsive Bedienung  
+✅ **API-Endpunkte**: Vollständig funktional mit erweiterten Datenstrukturen  
+✅ **Fehlerbehandlung**: Robuste Error-Recovery mit Fallback-Mechanismen  
+
+---
+
+## 🔗 Integration in DreamMall
+
+### Backend-Integration
+```javascript
+// API-Aufruf für Meeting-Protokoll
+const response = await fetch('/api/v1/transcribe', {
+  method: 'POST',
+  body: formData
+});
+
+// Status-Monitoring
+const status = await fetch(`/api/v1/status/${jobId}`);
+```
+
+### Frontend-Integration
+```javascript
+// Einbettung in DreamMall Frontend
+<iframe src="http://localhost:5000/web" width="100%" height="600"></iframe>
+
+// Oder direkte API-Nutzung
+const transcript = await A2TService.transcribe(audioFile);
+```
+
+---
+
+## 🛠️ Entwicklung & Deployment
+
+### Lokale Entwicklung
+```bash
+# Development Server mit Auto-Reload
+python src/api/app.py
+
+# Tests ausführen
+python tests/test_components.py
+python tests/test_new_ui.py
+```
+
+### Produktions-Deployment
+```bash
+# Mit Gunicorn (empfohlen)
+pip install gunicorn
+gunicorn --bind 0.0.0.0:5000 --workers 4 src.api.app:app
+
+# Mit Docker (optional)
+docker build -t a2t-dreammall .
+docker run -p 5000:5000 a2t-dreammall
+```
+
+### Systemanforderungen
+- **Python**: 3.10 oder 3.11 (KRITISCH für PyAnnote.Audio)
+- **Memory**: Mindestens 4GB RAM für Whisper
+- **Storage**: 2GB für KI-Modelle
+- **OS**: Windows 10/11, Linux, macOS
+
+---
+
+## 🔧 Konfiguration
+
+### Environment-Variablen (.env)
+```bash
+# HuggingFace Token für Speaker Diarization (optional)
+HUGGINGFACE_TOKEN=your_token_here
+
+# Ollama-Konfiguration (optional)
+OLLAMA_URL=http://localhost:11434
+OLLAMA_MODEL=llama3
+
+# Audio-Processing-Einstellungen
+WHISPER_MODEL=base  # tiny, base, small, medium, large
+DEFAULT_LANGUAGE=de
+
+# Server-Konfiguration
+FLASK_ENV=development
+FLASK_DEBUG=true
+PORT=5000
+```
+
+### KI-Modelle
+```bash
+# Whisper-Modelle (automatisch heruntergeladen)
+# - tiny: ~39MB, schnell, weniger genau
+# - base: ~74MB, ausgewogen (Standard)
+# - small: ~244MB, bessere Qualität
+# - medium: ~769MB, sehr gute Qualität
+# - large: ~1550MB, beste Qualität
+
+# PyAnnote-Modelle (automatisch mit HuggingFace Token)
+# - speaker-diarization: Sprecher-Erkennung
+
+# Ollama-Modelle (lokal verfügbar)
+# - llama3: Standard-Modell für Protokoll-Generierung
+# - mistral: Alternative für deutsche Texte
+```
+
+---
+
+## 🐛 Troubleshooting
+
+### Häufige Probleme
+
+#### FFmpeg nicht gefunden
+```bash
+# Windows: FFmpeg installieren
+# Download von: https://ffmpeg.org/download.html
+# Oder via Chocolatey: choco install ffmpeg
+
+# Fehler wird automatisch mit Librosa-Fallback behandelt
+```
+
+#### PyAnnote-Authentifizierung
+```bash
+# HuggingFace-Token erforderlich für Speaker Diarization
+# 1. Account erstellen: https://huggingface.co/
+# 2. Token generieren: https://huggingface.co/settings/tokens
+# 3. In .env-Datei eintragen: HUGGINGFACE_TOKEN=your_token
+```
+
+#### Ollama nicht verfügbar
+```bash
+# Ollama installieren (optional für KI-Protokolle)
+# Download von: https://ollama.ai/
+# Modell laden: ollama pull llama3
+
+# System funktioniert auch ohne Ollama (Fallback-Protokoll)
+```
+
+---
+
+## 📚 Weitere Dokumentation
+
+- **[README_STATUS.md](README_STATUS.md)**: Detaillierte Feature-Dokumentation
+- **[GitHub Repository](https://github.com/DreamMall-Verlag/A2T-DreamMall)**: Quellcode und Issues
+- **[DreamMall Whitepapers](../docs/)**: Technische Spezifikationen
+
+---
+
+## 🤝 Contribution
+
+Das Projekt ist Teil des DreamMall-Ökosystems. Beiträge sind willkommen:
+
+1. **Fork** das Repository
+2. **Branch** erstellen: `git checkout -b feature/neue-funktion`
+3. **Commit** Änderungen: `git commit -m "Neue Funktion hinzugefügt"`
+4. **Push** zum Branch: `git push origin feature/neue-funktion`
+5. **Pull Request** erstellen
+
+---
+
+## 📄 Lizenz
+
+MIT License - siehe [LICENSE](LICENSE) für Details.
+
+---
+
+## 🎯 Entwicklungsstand
+
+**Status**: ✅ **VOLLSTÄNDIG FUNKTIONSFÄHIG**  
+**Qualität**: Produktionstauglich  
+**Testing**: End-to-End Tests erfolgreich  
+**Integration**: DreamMall-Ready  
+**Next Steps**: Docker-Deployment, erweiterte Admin-Features
+
+---
+
+*Entwickelt für das DreamMall-Ecosystem | Audio-zu-Text Meeting Protocol Generator*
 │   ├── USER_GUIDE.md            # Benutzerhandbuch
 │   ├── TECHNICAL_SPEC.md        # Technische Spezifikation
 │   ├── DEVELOPMENT.md           # Entwicklungsanleitung
