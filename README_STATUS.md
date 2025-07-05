@@ -42,7 +42,6 @@ Der A2T-DreamMall Service ist eine vollständig funktionsfähige Audio-zu-Text P
 ├── AI/ML: Whisper, PyAnnote, Ollama, Librosa
 ├── Audio: FFmpeg, Librosa, PyDub
 ├── Frontend: HTML5, JavaScript, Tailwind CSS, Chart.js
-├── Deployment: Docker, Virtual Environment
 └── Integration: DreamMall Backend/Frontend Ready
 ```
 

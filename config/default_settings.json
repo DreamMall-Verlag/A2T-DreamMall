@@ -1,0 +1,132 @@
+{
+  "application": {
+    "name": "A2T-DreamMall",
+    "version": "1.0.0",
+    "description": "Audio-to-Text Meeting Protocol Generator",
+    "company": "DreamMall Verlag",
+    "license": "Internal Use Only"
+  },
+  "server": {
+    "host": "127.0.0.1",
+    "port": 5000,
+    "debug": false,
+    "auto_open_browser": true,
+    "cors_enabled": false,
+    "max_upload_size_mb": 100
+  },
+  "ai_models": {
+    "whisper": {
+      "default_model": "base",
+      "available_models": ["tiny", "base", "small", "medium", "large"],
+      "cache_dir": "models/whisper",
+      "device": "auto"
+    },
+    "pyannote": {
+      "model_name": "pyannote/speaker-diarization",
+      "cache_dir": "models/pyannote",
+      "min_speakers": 1,
+      "max_speakers": 10
+    },
+    "ollama": {
+      "base_url": "http://localhost:11434",
+      "default_model": "llama3:8b",
+      "alternative_models": ["mistral:7b", "codellama:7b"],
+      "timeout_seconds": 120,
+      "auto_download": true
+    }
+  },
+  "audio_processing": {
+    "supported_formats": [".mp3", ".wav", ".m4a", ".flac", ".ogg", ".wma"],
+    "max_duration_minutes": 180,
+    "sample_rate": 16000,
+    "normalization": true,
+    "noise_reduction": false
+  },
+  "output": {
+    "formats": ["json", "txt", "md", "docx"],
+    "default_format": "md",
+    "include_timestamps": true,
+    "include_confidence_scores": true,
+    "speaker_labels": true
+  },
+  "storage": {
+    "uploads_dir": "uploads",
+    "outputs_dir": "outputs", 
+    "logs_dir": "logs",
+    "temp_dir": "temp",
+    "cleanup_after_days": 30,
+    "max_storage_gb": 10
+  },
+  "security": {
+    "allowed_origins": ["http://localhost:5000"],
+    "api_key_required": false,
+    "rate_limiting": {
+      "enabled": true,
+      "requests_per_minute": 60
+    },
+    "file_validation": {
+      "scan_for_malware": false,
+      "check_file_headers": true,
+      "max_file_size_mb": 100
+    }
+  },
+  "logging": {
+    "level": "INFO",
+    "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    "file_rotation": {
+      "enabled": true,
+      "max_size_mb": 10,
+      "backup_count": 5
+    },
+    "sensitive_data_filtering": true
+  },
+  "performance": {
+    "threading": {
+      "max_workers": 4,
+      "async_processing": true
+    },
+    "caching": {
+      "enabled": true,
+      "ttl_seconds": 3600,
+      "max_cache_size_mb": 500
+    },
+    "gpu_acceleration": {
+      "enabled": "auto",
+      "prefer_cuda": true,
+      "fallback_to_cpu": true
+    }
+  },
+  "ui": {
+    "theme": "light",
+    "language": "en",
+    "auto_refresh": true,
+    "show_advanced_options": false,
+    "max_recent_files": 10
+  },
+  "deployment": {
+    "environment": "production",
+    "update_check": {
+      "enabled": true,
+      "check_interval_hours": 24,
+      "auto_update": false,
+      "update_server": "https://internal.dreammall.com/updates/"
+    },
+    "telemetry": {
+      "enabled": true,
+      "anonymous": true,
+      "endpoint": "https://internal.dreammall.com/telemetry/"
+    }
+  },
+  "experimental": {
+    "features": {
+      "real_time_transcription": false,
+      "multi_language_detection": false,
+      "emotion_analysis": false,
+      "meeting_summarization": true
+    },
+    "beta_models": {
+      "whisper_large_v3": false,
+      "custom_diarization": false
+    }
+  }
+}

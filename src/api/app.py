@@ -15,6 +15,10 @@ from services.ai.diarization import SpeakerDiarization
 from services.ai.ollama_client import OllamaClient
 from services.protocol.generator import ProtocolGenerator
 
+def create_app():
+    """Application factory function"""
+    return app
+
 app = Flask(__name__)
 CORS(app)
 
@@ -111,12 +115,6 @@ def health():
         "service": "A2T-DreamMall"
     })
 
-@app.route('/web')
-def web_interface():
-    """Web Interface für Meeting Protocol Generator"""
-    from flask import send_from_directory
-    return send_from_directory('../../web', 'index.html')
-
 @app.route('/api/v1/transcribe', methods=['POST'])
 def transcribe_audio():
     """Audio-Upload und Transkription"""
@@ -184,6 +182,60 @@ def get_job_status(job_id: str):
         response["error"] = str(job.error)
     
     return jsonify(response)
+
+@app.route('/web')
+@app.route('/web/')
+def web_interface():
+    """Serve the web interface"""
+    try:
+        # Check if running as PyInstaller bundle
+        if getattr(sys, 'frozen', False):
+            # Running as PyInstaller bundle
+            web_dir = os.path.join(sys._MEIPASS, 'web')
+        else:
+            # Running in development
+            web_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), '..', 'web')
+            web_dir = os.path.abspath(web_dir)
+        
+        index_path = os.path.join(web_dir, 'index.html')
+        
+        if os.path.exists(index_path):
+            return send_from_directory(web_dir, 'index.html')
+        else:
+            return jsonify({
+                "error": "Web interface not found",
+                "web_dir": web_dir,
+                "index_path": index_path,
+                "frozen": getattr(sys, 'frozen', False)
+            }), 404
+            
+    except Exception as e:
+        return jsonify({
+            "error": f"Failed to serve web interface: {str(e)}",
+            "frozen": getattr(sys, 'frozen', False)
+        }), 500
+
+@app.route('/web/<path:filename>')
+def web_static(filename):
+    """Serve static web assets"""
+    try:
+        # Check if running as PyInstaller bundle
+        if getattr(sys, 'frozen', False):
+            # Running as PyInstaller bundle
+            web_dir = os.path.join(sys._MEIPASS, 'web')
+        else:
+            # Running in development
+            web_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), '..', 'web')
+            web_dir = os.path.abspath(web_dir)
+        
+        return send_from_directory(web_dir, filename)
+        
+    except Exception as e:
+        return jsonify({
+            "error": f"Failed to serve static file: {str(e)}",
+            "filename": filename,
+            "frozen": getattr(sys, 'frozen', False)
+        }), 404
 
 if __name__ == '__main__':
     # Ensure temp directories exist

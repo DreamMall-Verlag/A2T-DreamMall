@@ -78,3 +78,38 @@ htmlcov/
 .mypy_cache/
 .dmypy.json
 dmypy.json
+
+# === PRIVATE BUILD SYSTEM (NOT FOR PUBLIC REPOSITORY) ===
+# PyInstaller build artifacts
+build/
+dist/
+*.spec
+
+# Build scripts and automation (PRIVATE)
+build_*.ps1
+build_*.sh
+build_all.py
+scripts/prepare_models.py
+scripts/validate_builds.py
+
+# Packaging documentation (PRIVATE)
+BUILD_GUIDE.md
+PACKAGING_STRATEGY.md
+IMPLEMENTATION_SUMMARY.md
+PROJECT_STATUS_FINAL.md
+LICENSE_INTERNAL.txt
+
+# Configuration for builds (PRIVATE)
+config/production_settings.json
+config/build_settings.json
+
+# Distribution packages
+*.zip
+*.tar.gz
+*.dmg
+*.pkg
+*.deb
+*.rpm
+*.exe
+*.msi
+*.AppImage

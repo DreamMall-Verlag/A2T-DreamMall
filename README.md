@@ -24,8 +24,7 @@
 ## 🚀 Status: VOLLSTÄNDIG FUNKTIONSFÄHIG
 
 **Current Version:** 1.0.0  
-**Status:** ✅ Production Ready  
-**GitHub:** https://github.com/DreamMall-Verlag/A2T-DreamMall
+**Status:** ✅ Production Ready
 
 ### ✅ Erfolgreich implementierte Features
 
@@ -67,13 +66,17 @@
 ## 🛠️ Technologie-Stack
 
 ```
-├── Backend: Flask + Python 3.10/3.11
+├── Backend: Flask + Python 3.10.x (KRITISCH für PyAnnote!)
 ├── AI/ML: Whisper, PyAnnote, Ollama, Librosa
 ├── Audio: FFmpeg, Librosa, PyDub
 ├── Frontend: HTML5, JavaScript, Tailwind CSS
-├── Deployment: Docker, Virtual Environment
 └── Integration: DreamMall Backend/Frontend Ready
 ```
+
+**⚠️ WICHTIG: Python 3.10.x ERFORDERLICH**
+- **PyAnnote.Audio** funktioniert nur bis Python 3.10
+- **Speaker Diarization** ist Kernfeature - NICHT optional
+- **pyenv-win** ermöglicht parallele Python-Versionen
 
 ### Pipeline-Übersicht
 ```
@@ -84,18 +87,36 @@ Audio Input → Audio Optimization → Speaker Diarization → Whisper Transcrip
 
 ## 🚀 Quick Start
 
-### 1. Installation
-```bash
-# Repository klonen
-git clone https://github.com/DreamMall-Verlag/A2T-DreamMall.git
-cd A2T-DreamMall
+### ⚠️ WICHTIG: Python 3.10.x Setup erforderlich!
 
-# Virtual Environment erstellen
+#### Empfohlene Installation mit pyenv-win
+```powershell
+# 1. pyenv-win installieren (falls noch nicht vorhanden)
+git clone https://github.com/pyenv-win/pyenv-win.git $env:USERPROFILE\.pyenv
+
+# 2. PATH erweitern (dauerhaft)
+$env:PYENV_ROOT = "$env:USERPROFILE\.pyenv"
+$env:PATH = "$env:PYENV_ROOT\pyenv-win\bin;$env:PYENV_ROOT\pyenv-win\shims;$env:PATH"
+
+# 3. Python 3.10.11 installieren
+pyenv install 3.10.11
+pyenv local 3.10.11
+
+# 4. Dependencies installieren
+pip install -r requirements.txt
+```
+
+### Alternative: Direkter Python 3.10 Download
+```bash
+# 1. Python 3.10.11 von python.org herunterladen
+# https://www.python.org/downloads/release/python-31011/
+
+# 2. Virtual Environment erstellen
 python -m venv venv
 venv\Scripts\activate  # Windows
-# source venv/bin/activate  # Linux/Mac
+source venv/bin/activate  # Linux/Mac
 
-# Dependencies installieren
+# 3. Dependencies installieren
 pip install -r requirements.txt
 ```
 
@@ -331,9 +352,40 @@ docker run -p 5000:5000 a2t-dreammall
 ```
 
 ### Systemanforderungen
-- **Python**: 3.10 oder 3.11 (KRITISCH für PyAnnote.Audio)
-- **Memory**: Mindestens 4GB RAM für Whisper
-- **Storage**: 2GB für KI-Modelle
+
+#### 🔄 **Python-Versionsmanagement mit pyenv-win (Windows)**
+
+**WICHTIG**: A2T-DreamMall benötigt **Python 3.10.x** für volle Funktionalität mit Speaker Diarization!
+
+#### **📦 Empfohlenes Setup mit pyenv-win**
+```powershell
+# 1. pyenv-win installieren (einmalig)
+git clone https://github.com/pyenv-win/pyenv-win.git $env:USERPROFILE\.pyenv
+
+# 2. Umgebungsvariablen setzen
+$env:PYENV_ROOT = "$env:USERPROFILE\.pyenv"
+$env:PATH = "$env:PYENV_ROOT\pyenv-win\bin;$env:PYENV_ROOT\pyenv-win\shims;$env:PATH"
+
+# 3. Python 3.10.11 installieren (KRITISCH für PyAnnote.Audio)
+pyenv install 3.10.11
+pyenv local 3.10.11
+
+# 4. Dependencies installieren
+pip install -r requirements.txt
+```
+
+#### **🎯 VOLLVERSION - Alle Features verfügbar**
+- **Python**: 3.10.11 (ERFORDERLICH für PyAnnote.Audio)
+- **Features**: 
+  - ✅ **Whisper** - Hochpräzise deutsche Transkription
+  - ✅ **PyAnnote** - Speaker Diarization (Kernfeature!)
+  - ✅ **Ollama** - Lokale KI-Protokoll-Generierung
+  - ✅ **Timeline** - Zeitstempel-synchrone Speaker-Erkennung
+
+#### **💻 Hardware-Anforderungen**
+- **Python**: 3.10.x (KRITISCH - neuere Versionen brechen PyAnnote!)
+- **Memory**: Mindestens 4GB RAM für Whisper + PyAnnote
+- **Storage**: 3GB für KI-Modelle (Whisper + PyAnnote + Ollama)
 - **OS**: Windows 10/11, Linux, macOS
 
 ---
