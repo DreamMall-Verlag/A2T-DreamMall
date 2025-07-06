@@ -26,9 +26,10 @@ CORS(app)
 active_jobs = {}
 
 class A2TJob:
-    def __init__(self, job_id: str, audio_file: str):
+    def __init__(self, job_id: str, audio_file: str, model: str = "base"):
         self.job_id = job_id
         self.audio_file = audio_file
+        self.model = model
         self.status = "queued"
         self.progress = 0
         self.result = None
@@ -48,6 +49,7 @@ def process_audio_async(job: A2TJob):
         job.progress = 10
         
         print(f"🎵 Processing audio file: {job.audio_file}")
+        print(f"🎯 Using Whisper model: {job.model}")
         
         # File path should already be absolute
         audio_path = job.audio_file
@@ -70,7 +72,7 @@ def process_audio_async(job: A2TJob):
         print(f"✅ File confirmed: {audio_path}")
         print(f"📏 File size: {os.path.getsize(audio_path)} bytes")
         
-        # Process audio through pipeline with timeout protection
+        # Process audio through pipeline with selected model
         job.progress = 20
         
         # Add timeout for the entire processing
@@ -85,7 +87,8 @@ def process_audio_async(job: A2TJob):
                 signal.signal(signal.SIGALRM, timeout_handler)
                 signal.alarm(600)  # 10 minutes
             
-            result = protocol_generator.process_audio_to_protocol(audio_path)
+            # Pass model to protocol generator
+            result = protocol_generator.process_audio_to_protocol(audio_path, whisper_model=job.model)
             
             if os.name != 'nt':  # Unix systems
                 signal.alarm(0)  # Cancel alarm
@@ -151,6 +154,15 @@ def health():
         "service": "A2T-DreamMall"
     })
 
+@app.route('/api/v1/models', methods=['GET'])
+def get_available_models():
+    """Get available Whisper models"""
+    return jsonify({
+        "current_model": whisper_client.current_model_size,
+        "available_models": whisper_client.AVAILABLE_MODELS,
+        "model_info": whisper_client.get_model_info()
+    })
+
 @app.route('/api/v1/transcribe', methods=['POST'])
 def transcribe_audio():
     """Audio-Upload und Transkription"""
@@ -160,7 +172,10 @@ def transcribe_audio():
     audio_file = request.files['audio']
     if audio_file.filename == '':
         return jsonify({"error": "No file selected"}), 400
-        
+    
+    # Get model selection from form data
+    selected_model = request.form.get('model', 'base')
+    
     job_id = str(uuid.uuid4())
     
     # Ensure upload directory exists with absolute path
@@ -174,13 +189,14 @@ def transcribe_audio():
     
     print(f"📁 File saved to: {upload_path}")
     print(f"📂 File exists: {os.path.exists(upload_path)}")
+    print(f"🎯 Selected model: {selected_model}")
     
     # Ensure absolute path for job
     absolute_upload_path = os.path.abspath(upload_path)
     print(f"📍 Absolute path: {absolute_upload_path}")
     
-    # Create job with absolute path
-    job = A2TJob(job_id, absolute_upload_path)
+    # Create job with absolute path and model selection
+    job = A2TJob(job_id, absolute_upload_path, selected_model)
     active_jobs[job_id] = job
     
     # Start background processing
@@ -189,7 +205,8 @@ def transcribe_audio():
     return jsonify({
         "job_id": job_id,
         "status": "queued",
-        "message": "Audio processing started"
+        "message": "Audio processing started",
+        "selected_model": selected_model
     })
 
 @app.route('/api/v1/status/<job_id>', methods=['GET'])

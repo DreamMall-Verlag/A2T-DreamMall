@@ -18,15 +18,22 @@ class ProtocolGenerator:
         self.whisper = whisper_client
         self.diarization = diarization_client
         
-    def process_audio_to_protocol(self, audio_path: str) -> ProtocolData:
+    def process_audio_to_protocol(self, audio_path: str, whisper_model: str = None) -> ProtocolData:
         """Komplette Pipeline: Audio → Protokoll"""
         
         print("🎵 Starting audio processing pipeline...")
         
-        # 1. Transkription
+        # 1. Transkription with model selection
         print("📝 Starting transcription...")
-        transcript_result = self.whisper.transcribe_with_timestamps(audio_path)
-        print(f"📝 Transcription completed. Length: {len(transcript_result['text'])} chars")
+        if whisper_model:
+            print(f"🎯 Using Whisper model: {whisper_model}")
+        
+        transcript_result = self.whisper.transcribe_with_timestamps(
+            audio_path, 
+            model_override=whisper_model
+        )
+        
+        print(f"📝 Transcription completed with model '{transcript_result.get('model_used', 'unknown')}'")
         print(f"📝 Duration: {transcript_result.get('duration', 'unknown')} seconds")
         print(f"📝 Segments: {len(transcript_result.get('segments', []))}")
         
@@ -44,6 +51,14 @@ class ProtocolGenerator:
         unique_speakers = list(set(s["speaker"] for s in speakers)) if speakers else []
         duration = transcript_result.get("duration", 0)
         
+        # Fix duration from segments if Whisper duration is 0
+        if duration == 0 and transcript_result.get("segments"):
+            segments = transcript_result.get("segments", [])
+            if segments:
+                last_segment = segments[-1]
+                duration = last_segment.get("end", 0)
+                print(f"⏱️ Fixed duration from segments: {duration:.2f} seconds")
+        
         # Calculate actual speaker count
         speaker_count = len(unique_speakers) if unique_speakers else 1
         
@@ -56,7 +71,8 @@ class ProtocolGenerator:
             "segments_count": len(transcript_result.get("segments", [])),
             "diarization_available": len(speakers) > 0,
             "transcript_length": len(transcript_result["text"]),
-            "average_segment_duration": duration / len(transcript_result.get("segments", [1])) if duration > 0 else 0
+            "average_segment_duration": duration / len(transcript_result.get("segments", [1])) if duration > 0 else 0,
+            "whisper_model_used": transcript_result.get("model_used", "unknown")
         }
         
         print(f"📊 Enhanced Metadata: {metadata}")
