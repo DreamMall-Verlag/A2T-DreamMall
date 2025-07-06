@@ -12,10 +12,8 @@ soundfile==0.12.1
 
 # AI/ML Dependencies (KRITISCHE Reihenfolge!)
 # PyTorch CPU-Version für Stabilität
---index-url https://download.pytorch.org/whl/cpu
-torch==2.5.1+cpu
-torchaudio==2.5.1+cpu
-
+# ist in requirements-pytorch.txt
+ 
 # Whisper für Transkription
 openai-whisper==20240930
 

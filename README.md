@@ -332,6 +332,19 @@ const transcript = await A2TService.transcribe(audioFile);
 
 ### Lokale Entwicklung
 ```bash
+# Windows:
+.venv\Scripts\activate
+
+# macOS/Linux:
+source .venv/bin/activate
+# Beispiel für 3.10
+py -3.10 -m venv .venv
+
+python --version
+
+pip install -r requirements.txt
+pip install -r requirements-pytorch.txt
+
 # Development Server mit Auto-Reload
 python src/api/app.py
 
