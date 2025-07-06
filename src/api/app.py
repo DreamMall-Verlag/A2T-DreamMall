@@ -70,9 +70,45 @@ def process_audio_async(job: A2TJob):
         print(f"✅ File confirmed: {audio_path}")
         print(f"📏 File size: {os.path.getsize(audio_path)} bytes")
         
-        # Process audio through pipeline
+        # Process audio through pipeline with timeout protection
         job.progress = 20
-        result = protocol_generator.process_audio_to_protocol(audio_path)
+        
+        # Add timeout for the entire processing
+        import signal
+        
+        def timeout_handler(signum, frame):
+            raise TimeoutError("Audio processing timeout")
+        
+        try:
+            # Set timeout for processing (10 minutes)
+            if os.name != 'nt':  # Unix systems
+                signal.signal(signal.SIGALRM, timeout_handler)
+                signal.alarm(600)  # 10 minutes
+            
+            result = protocol_generator.process_audio_to_protocol(audio_path)
+            
+            if os.name != 'nt':  # Unix systems
+                signal.alarm(0)  # Cancel alarm
+            
+        except TimeoutError:
+            print("⏰ Processing timeout - creating fallback result")
+            # Create fallback result
+            from services.protocol.generator import ProtocolData
+            result = ProtocolData(
+                audio_file=audio_path,
+                transcript="Processing timeout - please try with a shorter audio file",
+                segments=[],
+                speakers=[],
+                protocol_text="# Processing Timeout\n\nThe audio file took too long to process. Please try with a shorter file.",
+                metadata={
+                    "language": "de",
+                    "duration": 0,
+                    "speaker_count": 0,
+                    "segments_count": 0,
+                    "diarization_available": False,
+                    "error": "timeout"
+                }
+            )
         
         job.progress = 100
         job.status = "completed"
@@ -175,7 +211,7 @@ def get_job_status(job_id: str):
             "transcript": job.result.transcript,
             "segments": job.result.segments,
             "speakers": job.result.speakers,
-            "protocol": job.result.protocol_text,
+            "protocol": job.result.protocol_text,  # Changed from protocol_text to protocol
             "metadata": job.result.metadata
         }
     elif job.status == "failed" and job.error:

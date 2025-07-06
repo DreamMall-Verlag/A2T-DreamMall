@@ -278,15 +278,22 @@
             let segments = [];
             let speakers = [];
 
-            if (data.speakers && data.speakers.length > 0) {
-                // Use speaker diarization data
+            // Check if we have enhanced segments (with speaker info from diarization)
+            if (data.segments && data.segments.length > 0 && data.segments[0].speaker) {
+                // Use enhanced segments with speaker information
+                segments = data.segments;
+                speakers = [...new Set(data.segments.map(s => s.speaker))];
+                console.log("📝 Using enhanced segments with speaker diarization");
+            } else if (data.speakers && data.speakers.length > 0) {
+                // Use speaker diarization data with transcript matching
                 segments = data.speakers.map(segment => ({
                     speaker: segment.speaker,
-                    text: segment.text || '',
+                    text: segment.text || extractTextForTimeRange(data.transcript, segment.start, segment.end),
                     start: segment.start,
                     end: segment.end
                 }));
                 speakers = [...new Set(data.speakers.map(s => s.speaker))];
+                console.log("🎭 Using speaker diarization segments");
             } else if (data.segments && data.segments.length > 0) {
                 // Use Whisper segments with default speaker
                 segments = data.segments.map((segment, index) => ({
@@ -296,6 +303,7 @@
                     end: segment.end
                 }));
                 speakers = ['Speaker_1'];
+                console.log("📝 Using Whisper segments with default speaker");
             } else {
                 // Fallback: use raw transcript
                 segments = [{
@@ -305,7 +313,10 @@
                     end: data.metadata?.duration || 0
                 }];
                 speakers = ['Speaker_1'];
+                console.log("📝 Using fallback transcript");
             }
+            
+            console.log(`📊 Displaying ${segments.length} segments with ${speakers.length} speakers`);
             
             // Create speaker legend
             speakerLegend.innerHTML = speakers.map((speaker, index) => 
@@ -333,6 +344,11 @@
                     </div>
                 `;
             }).join('');
+        }
+
+        function extractTextForTimeRange(fullText, start, end) {
+            // Simple fallback - in a real implementation you'd need proper time-text mapping
+            return `[${formatTime(start)} - ${formatTime(end)}] Text segment`;
         }
 
         function getSpeakerColor(index) {
