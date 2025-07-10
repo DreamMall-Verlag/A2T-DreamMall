@@ -6,10 +6,15 @@ import os
 import sys
 from threading import Thread
 from datetime import datetime
+import librosa
+import soundfile as sf
+import tempfile
+import numpy as np
 
 # Add src to path for imports
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
+from config.settings import A2TSettings
 from services.ai.whisper_client import WhisperClient
 from services.ai.diarization import SpeakerDiarization
 from services.ai.ollama_client import OllamaClient
@@ -26,25 +31,32 @@ CORS(app)
 active_jobs = {}
 
 class A2TJob:
-    def __init__(self, job_id: str, audio_file: str, model: str = "base"):
+    def __init__(self, job_id: str, audio_file: str, model: str = None):
         self.job_id = job_id
         self.audio_file = audio_file
-        self.model = model
+        self.model = model or A2TSettings.WHISPER_MODEL  # Use setting default
         self.status = "queued"
         self.progress = 0
         self.result = None
         self.error = None
         self.created_at = datetime.now()
 
-# Initialize AI Services
-whisper_client = WhisperClient()
+# Initialize AI Services for local operation
+print(f"🔧 Initializing A2T Services for local operation")
+
+# Print startup configuration info
+A2TSettings.print_startup_info()
+
+# Use "small" as default Whisper model for best balance of quality and speed
+whisper_client = WhisperClient(model_size=A2TSettings.WHISPER_MODEL)
 diarization_client = SpeakerDiarization()
-ollama_client = OllamaClient()
+ollama_client = OllamaClient(base_url=A2TSettings.OLLAMA_BASE_URL)
 protocol_generator = ProtocolGenerator(ollama_client, whisper_client, diarization_client)
 
 def process_audio_async(job: A2TJob):
-    """Background processing function"""
+    """Background processing function with enhanced debugging"""
     try:
+        print(f"🚀 [DEBUG] Starting async processing for job {job.job_id}")
         job.status = "processing"
         job.progress = 10
         
@@ -72,44 +84,42 @@ def process_audio_async(job: A2TJob):
         print(f"✅ File confirmed: {audio_path}")
         print(f"📏 File size: {os.path.getsize(audio_path)} bytes")
         
+        # Convert audio to WAV for better Whisper compatibility
+        print(f"🔄 [DEBUG] Converting audio to optimal WAV format...")
+        converted_audio_path = convert_audio_to_wav(audio_path)
+        print(f"✅ [DEBUG] Audio conversion completed: {converted_audio_path}")
+        
         # Process audio through pipeline with selected model
         job.progress = 20
+        print(f"🔄 [DEBUG] Starting protocol generation with model: {job.model}")
         
-        # Add timeout for the entire processing
-        import signal
-        
-        def timeout_handler(signum, frame):
-            raise TimeoutError("Audio processing timeout")
-        
+        # Add more specific error handling
         try:
-            # Set timeout for processing (10 minutes)
-            if os.name != 'nt':  # Unix systems
-                signal.signal(signal.SIGALRM, timeout_handler)
-                signal.alarm(600)  # 10 minutes
+            # Pass converted audio and model to protocol generator
+            print(f"🎤 [DEBUG] Calling protocol_generator.process_audio_to_protocol")
+            result = protocol_generator.process_audio_to_protocol(converted_audio_path, whisper_model=job.model)
+            print(f"✅ [DEBUG] Protocol generation completed successfully")
             
-            # Pass model to protocol generator
-            result = protocol_generator.process_audio_to_protocol(audio_path, whisper_model=job.model)
+        except Exception as processing_error:
+            print(f"❌ [DEBUG] Protocol generation failed: {processing_error}")
+            print(f"🔧 [DEBUG] Creating fallback result due to error: {type(processing_error).__name__}")
             
-            if os.name != 'nt':  # Unix systems
-                signal.alarm(0)  # Cancel alarm
-            
-        except TimeoutError:
-            print("⏰ Processing timeout - creating fallback result")
             # Create fallback result
             from services.protocol.generator import ProtocolData
             result = ProtocolData(
-                audio_file=audio_path,
-                transcript="Processing timeout - please try with a shorter audio file",
+                audio_file=converted_audio_path,
+                transcript=f"Processing failed: {str(processing_error)}",
                 segments=[],
                 speakers=[],
-                protocol_text="# Processing Timeout\n\nThe audio file took too long to process. Please try with a shorter file.",
+                protocol_text=f"# Processing Error\n\nAudio processing failed with error:\n{str(processing_error)}\n\nThis may be due to audio format compatibility issues.",
                 metadata={
                     "language": "de",
                     "duration": 0,
                     "speaker_count": 0,
                     "segments_count": 0,
                     "diarization_available": False,
-                    "error": "timeout"
+                    "error": str(processing_error),
+                    "error_type": type(processing_error).__name__
                 }
             )
         
@@ -117,25 +127,125 @@ def process_audio_async(job: A2TJob):
         job.status = "completed"
         job.result = result
         
-        print(f"✅ Audio processing completed for job {job.job_id}")
+        # Cleanup converted audio file if different from original
+        if converted_audio_path != audio_path:
+            try:
+                os.remove(converted_audio_path)
+                print(f"🧹 [DEBUG] Cleaned up converted audio file: {converted_audio_path}")
+            except Exception as cleanup_error:
+                print(f"⚠️ [DEBUG] Failed to cleanup converted file: {cleanup_error}")
+        
+        print(f"✅ [DEBUG] Audio processing completed for job {job.job_id}")
+        print(f"📊 [DEBUG] Result metadata: {result.metadata}")
         
     except Exception as e:
         job.status = "failed"
         job.error = str(e)
-        print(f"❌ Audio processing failed for job {job.job_id}: {e}")
+        print(f"❌ [DEBUG] Audio processing failed for job {job.job_id}: {e}")
+        print(f"🔍 [DEBUG] Error type: {type(e).__name__}")
+        import traceback
+        print(f"📋 [DEBUG] Full traceback:")
+        traceback.print_exc()
+
+def convert_audio_to_wav(audio_path: str) -> str:
+    """
+    Convert any audio file to WAV format for better Whisper compatibility
+    Returns path to converted WAV file (or original if already optimal)
+    """
+    try:
+        print(f"🔄 [AUDIO] Checking audio format: {audio_path}")
+        
+        # Check if file exists
+        if not os.path.exists(audio_path):
+            raise FileNotFoundError(f"Audio file not found: {audio_path}")
+        
+        file_size = os.path.getsize(audio_path)
+        print(f"📏 [AUDIO] Original file size: {file_size} bytes")
+        
+        # Get file extension
+        _, ext = os.path.splitext(audio_path.lower())
+        print(f"📁 [AUDIO] File extension: {ext}")
+        
+        # If already WAV and reasonable size, check if it needs processing
+        if ext == '.wav':
+            try:
+                # Quick check if WAV is already optimal
+                audio, sr = librosa.load(audio_path, sr=None, duration=1.0)  # Load just 1 second to test
+                if sr == 16000 and len(audio.shape) == 1:  # Mono, 16kHz
+                    print(f"✅ [AUDIO] WAV file already optimal: {sr}Hz, mono")
+                    return audio_path
+                else:
+                    print(f"🔄 [AUDIO] WAV needs reprocessing: {sr}Hz, shape: {audio.shape}")
+            except Exception as e:
+                print(f"⚠️ [AUDIO] WAV check failed, will reprocess: {e}")
+        
+        # Load full audio with librosa (handles most formats)
+        print(f"🔄 [AUDIO] Loading audio with librosa...")
+        audio, sr = librosa.load(audio_path, sr=16000, mono=True)
+        print(f"✅ [AUDIO] Audio loaded: {len(audio)} samples at {sr}Hz")
+        
+        # Handle edge cases
+        if len(audio) == 0:
+            print("⚠️ [AUDIO] Empty audio detected, creating silence")
+            audio = np.zeros(16000)  # 1 second silence
+        elif len(audio) < 1600:  # Less than 0.1 seconds
+            print(f"⚠️ [AUDIO] Very short audio ({len(audio)} samples), padding")
+            audio = np.pad(audio, (0, 16000 - len(audio)), mode='constant')
+        
+        # Normalize audio to prevent clipping
+        if np.max(np.abs(audio)) > 0:
+            max_val = np.max(np.abs(audio))
+            if max_val > 1.0:
+                audio = audio / max_val * 0.95
+                print(f"✅ [AUDIO] Normalized audio (max was: {max_val:.3f})")
+        else:
+            print("⚠️ [AUDIO] Audio appears to be silent")
+        
+        # Create output path for converted WAV
+        temp_dir = tempfile.gettempdir()
+        base_name = os.path.splitext(os.path.basename(audio_path))[0]
+        wav_filename = f"{base_name}_converted.wav"
+        wav_path = os.path.join(temp_dir, wav_filename)
+        
+        print(f"💾 [AUDIO] Saving converted WAV to: {wav_path}")
+        
+        # Save as WAV with consistent format (16-bit PCM, 16kHz, mono)
+        sf.write(wav_path, audio, 16000, format='WAV', subtype='PCM_16')
+        
+        # Verify converted file
+        if os.path.exists(wav_path):
+            converted_size = os.path.getsize(wav_path)
+            print(f"✅ [AUDIO] Conversion successful: {converted_size} bytes")
+            print(f"📊 [AUDIO] Duration: {len(audio) / 16000:.2f} seconds")
+            return wav_path
+        else:
+            raise Exception("Failed to save converted WAV file")
+        
+    except Exception as e:
+        print(f"❌ [AUDIO] Conversion failed: {e}")
+        print(f"🔄 [AUDIO] Using original file: {audio_path}")
         import traceback
         traceback.print_exc()
+        return audio_path
 
 @app.route('/')
 def home():
-    """Health check endpoint"""
+    """Health check endpoint with configuration info"""
     return jsonify({
         "service": "A2T-DreamMall",
         "status": "running",
         "version": "1.0.0",
+        "configuration": {
+            "whisper_model": A2TSettings.WHISPER_MODEL,
+            "language": A2TSettings.WHISPER_LANGUAGE,
+            "huggingface_available": bool(A2TSettings.HUGGINGFACE_TOKEN),
+            "ollama_url": A2TSettings.OLLAMA_BASE_URL
+        },
         "endpoints": {
             "transcribe": "/api/v1/transcribe",
             "status": "/api/v1/status/<job_id>",
+            "config": "/api/v1/config",
+            "models": "/api/v1/models",
             "web": "/web"
         }
     })
@@ -153,6 +263,25 @@ def health():
         "active_jobs": len(active_jobs),
         "service": "A2T-DreamMall"
     })
+
+@app.route('/api/v1/config', methods=['GET'])
+def get_configuration():
+    """Get current system configuration and requirements"""
+    try:
+        return jsonify({
+            "status": A2TSettings.get_status(),
+            "requirements": A2TSettings.get_requirements(),
+            "service_status": {
+                "whisper": whisper_client is not None,
+                "diarization": diarization_client.available,
+                "ollama": ollama_client.available,
+                "protocol_generator": protocol_generator is not None
+            }
+        })
+    except Exception as e:
+        return jsonify({
+            "error": f"Failed to get configuration: {str(e)}"
+        }), 500
 
 @app.route('/api/v1/models', methods=['GET'])
 def get_available_models():
@@ -173,8 +302,8 @@ def transcribe_audio():
     if audio_file.filename == '':
         return jsonify({"error": "No file selected"}), 400
     
-    # Get model selection from form data
-    selected_model = request.form.get('model', 'base')
+    # Get model selection from form data (default from settings)
+    selected_model = request.form.get('model', A2TSettings.WHISPER_MODEL)
     
     job_id = str(uuid.uuid4())
     
@@ -236,19 +365,91 @@ def get_job_status(job_id: str):
     
     return jsonify(response)
 
+@app.route('/api/v1/generate-protocol', methods=['POST'])
+def generate_protocol_endpoint():
+    """Generate meeting protocol with custom speaker names"""
+    try:
+        data = request.get_json()
+        
+        if not data or 'transcript' not in data:
+            return jsonify({"error": "Missing transcript data"}), 400
+        
+        transcript = data.get('transcript', '')
+        speakers = data.get('speakers', [])
+        metadata = data.get('metadata', {})
+        
+        print(f"🤖 [PROTOCOL] Generating protocol with custom speaker names...")
+        print(f"📝 [PROTOCOL] Speakers: {[s.get('name', 'Unknown') for s in speakers]}")
+        
+        # Try to generate protocol with Ollama if available
+        if ollama_client.available:
+            try:
+                protocol_text = ollama_client.generate_protocol(
+                    transcript=transcript,
+                    speakers=speakers,
+                    model=A2TSettings.OLLAMA_MODEL
+                )
+                print(f"✅ [PROTOCOL] Ollama protocol generated successfully")
+                
+                return jsonify({
+                    "protocol": protocol_text,
+                    "method": "ollama",
+                    "speakers": speakers,
+                    "metadata": metadata
+                })
+                
+            except Exception as ollama_error:
+                print(f"⚠️ [PROTOCOL] Ollama failed: {ollama_error}")
+                # Fall through to fallback
+        
+        # Fallback protocol generation
+        print(f"🔄 [PROTOCOL] Using fallback protocol generation")
+        
+        from datetime import datetime
+        now = datetime.now()
+        speaker_names = [s.get('name', f"Sprecher {i+1}") for i, s in enumerate(speakers)]
+        
+        fallback_protocol = f"""# Meeting-Protokoll
+
+## Allgemeine Informationen
+- **Datum:** {now.strftime('%d.%m.%Y')}
+- **Uhrzeit:** {now.strftime('%H:%M')}
+- **Dauer:** {metadata.get('duration', 0):.0f} Sekunden
+- **Teilnehmer:** {', '.join(speaker_names)}
+- **Sprache:** {metadata.get('language', 'de').upper()}
+
+## Transkription
+
+{transcript}
+
+## Zusammenfassung
+Das Meeting wurde automatisch transkribiert und die Sprecher wurden identifiziert.
+
+## Hinweise
+- Dieses Protokoll wurde automatisch generiert
+- Bitte überprüfen Sie die Inhalte auf Vollständigkeit und Richtigkeit
+- Sprecher-Namen wurden manuell zugeordnet
+"""
+        
+        return jsonify({
+            "protocol": fallback_protocol,
+            "method": "fallback",
+            "speakers": speakers,
+            "metadata": metadata
+        })
+        
+    except Exception as e:
+        print(f"❌ [PROTOCOL] Generation failed: {e}")
+        return jsonify({"error": f"Protocol generation failed: {str(e)}"}), 500
+
 @app.route('/web')
 @app.route('/web/')
 def web_interface():
     """Serve the web interface"""
     try:
-        # Check if running as PyInstaller bundle
-        if getattr(sys, 'frozen', False):
-            # Running as PyInstaller bundle
-            web_dir = os.path.join(sys._MEIPASS, 'web')
-        else:
-            # Running in development
-            web_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), '..', 'web')
-            web_dir = os.path.abspath(web_dir)
+        # Running in local development mode
+        web_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), '..', 'web')
+        web_dir = os.path.abspath(web_dir)
         
         index_path = os.path.join(web_dir, 'index.html')
         
@@ -258,36 +459,28 @@ def web_interface():
             return jsonify({
                 "error": "Web interface not found",
                 "web_dir": web_dir,
-                "index_path": index_path,
-                "frozen": getattr(sys, 'frozen', False)
+                "index_path": index_path
             }), 404
             
     except Exception as e:
         return jsonify({
-            "error": f"Failed to serve web interface: {str(e)}",
-            "frozen": getattr(sys, 'frozen', False)
+            "error": f"Failed to serve web interface: {str(e)}"
         }), 500
 
 @app.route('/web/<path:filename>')
 def web_static(filename):
     """Serve static web assets"""
     try:
-        # Check if running as PyInstaller bundle
-        if getattr(sys, 'frozen', False):
-            # Running as PyInstaller bundle
-            web_dir = os.path.join(sys._MEIPASS, 'web')
-        else:
-            # Running in development
-            web_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), '..', 'web')
-            web_dir = os.path.abspath(web_dir)
+        # Running in local development mode
+        web_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), '..', 'web')
+        web_dir = os.path.abspath(web_dir)
         
         return send_from_directory(web_dir, filename)
         
     except Exception as e:
         return jsonify({
             "error": f"Failed to serve static file: {str(e)}",
-            "filename": filename,
-            "frozen": getattr(sys, 'frozen', False)
+            "filename": filename
         }), 404
 
 if __name__ == '__main__':

@@ -1,4 +1,5 @@
 # src/services/protocol/generator.py
+import os
 from dataclasses import dataclass
 from typing import List, Dict
 import json
@@ -19,33 +20,45 @@ class ProtocolGenerator:
         self.diarization = diarization_client
         
     def process_audio_to_protocol(self, audio_path: str, whisper_model: str = None) -> ProtocolData:
-        """Komplette Pipeline: Audio → Protokoll"""
+        """Komplette Pipeline: Audio → Protokoll mit Debug-Output"""
         
-        print("🎵 Starting audio processing pipeline...")
+        print("🎵 [PROTOCOL] Starting audio processing pipeline...")
+        print(f"📁 [PROTOCOL] Audio file: {audio_path}")
+        print(f"📏 [PROTOCOL] File size: {os.path.getsize(audio_path) if os.path.exists(audio_path) else 'FILE NOT FOUND'} bytes")
         
-        # 1. Transkription with model selection
-        print("📝 Starting transcription...")
-        if whisper_model:
-            print(f"🎯 Using Whisper model: {whisper_model}")
-        
-        transcript_result = self.whisper.transcribe_with_timestamps(
-            audio_path, 
-            model_override=whisper_model
-        )
-        
-        print(f"📝 Transcription completed with model '{transcript_result.get('model_used', 'unknown')}'")
-        print(f"📝 Duration: {transcript_result.get('duration', 'unknown')} seconds")
-        print(f"📝 Segments: {len(transcript_result.get('segments', []))}")
-        
-        # 2. Speaker Diarization
-        print("🎭 Starting speaker diarization...")
-        speakers = self.diarization.identify_speakers(audio_path)
-        print(f"🎭 Speaker diarization completed. Found {len(speakers)} segments")
-        
-        # 3. Merge transcription with speaker information
-        enhanced_segments = self._merge_transcription_with_speakers(
-            transcript_result["segments"], speakers
-        )
+        try:
+            # 1. Transkription with model selection
+            print("📝 [PROTOCOL] Starting transcription...")
+            if whisper_model:
+                print(f"🎯 [PROTOCOL] Using Whisper model: {whisper_model}")
+            
+            transcript_result = self.whisper.transcribe_with_timestamps(
+                audio_path, 
+                model_override=whisper_model
+            )
+            
+            print(f"📝 [PROTOCOL] Transcription completed with model '{transcript_result.get('model_used', 'unknown')}'")
+            print(f"📝 [PROTOCOL] Duration: {transcript_result.get('duration', 'unknown')} seconds")
+            print(f"📝 [PROTOCOL] Segments: {len(transcript_result.get('segments', []))}")
+            print(f"📝 [PROTOCOL] Text length: {len(transcript_result.get('text', ''))}")
+            
+            # 2. Speaker Diarization
+            print("🎭 [PROTOCOL] Starting speaker diarization...")
+            speakers = self.diarization.identify_speakers(audio_path)
+            print(f"🎭 [PROTOCOL] Speaker diarization completed. Found {len(speakers)} segments")
+            
+            # 3. Merge transcription with speaker information
+            print("🔗 [PROTOCOL] Merging transcription with speaker information...")
+            enhanced_segments = self._merge_transcription_with_speakers(
+                transcript_result["segments"], speakers
+            )
+            print(f"🔗 [PROTOCOL] Enhanced segments created: {len(enhanced_segments)}")
+            
+        except Exception as e:
+            print(f"❌ [PROTOCOL] Error in transcription/diarization phase: {e}")
+            import traceback
+            traceback.print_exc()
+            raise e
         
         # 4. Calculate metadata with proper values
         unique_speakers = list(set(s["speaker"] for s in speakers)) if speakers else []

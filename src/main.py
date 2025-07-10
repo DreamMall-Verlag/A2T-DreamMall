@@ -95,9 +95,16 @@ def check_dependencies():
         'requests'
     ]
     
-    optional_modules = [
-        'pyannote.audio'  # Speaker diarization - optional feature
-    ]
+    # Optional modules - only check in development mode
+    optional_modules = []
+    
+    # Skip PyAnnote check in standalone mode (frozen executable)
+    if not getattr(sys, 'frozen', False):
+        optional_modules = [
+            'pyannote.audio'  # Speaker diarization - optional feature
+        ]
+    else:
+        logger.info("[STANDALONE] Skipping PyAnnote check - using fallback speaker detection")
     
     missing_modules = []
     

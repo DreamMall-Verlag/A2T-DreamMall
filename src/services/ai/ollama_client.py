@@ -1,6 +1,7 @@
 # src/services/ai/ollama_client.py
 import requests
 import json
+import sys
 from typing import Dict, List
 
 class OllamaClient:
@@ -8,7 +9,7 @@ class OllamaClient:
         self.base_url = base_url
         self.available = False
         
-        # Test Ollama-Verbindung
+        # Test Ollama connection
         try:
             response = requests.get(f"{self.base_url}/api/tags", timeout=2)
             if response.status_code == 200:
@@ -18,6 +19,7 @@ class OllamaClient:
                 print("⚠️ Ollama server not responding")
         except Exception as e:
             print(f"⚠️ Ollama not available: {e}")
+            print("💡 Meeting protocols will use fallback generation")
         
     def generate_protocol(self, transcript: str, speakers: List[Dict], 
                          model: str = "llama3") -> str:

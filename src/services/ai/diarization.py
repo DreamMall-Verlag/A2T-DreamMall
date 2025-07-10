@@ -1,5 +1,6 @@
 # src/services/ai/diarization.py
 import os
+import sys
 import librosa
 import soundfile as sf
 import tempfile
@@ -8,8 +9,10 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
+# Skip PyAnnote imports if not available
 try:
     from pyannote.audio import Pipeline
+    from pyannote.audio.pipelines import SpeakerDiarization as SpeakerDiarizationPipeline
     PYANNOTE_AVAILABLE = True
 except Exception as e:
     print(f"⚠️ PyAnnote not available: {e}")
@@ -77,10 +80,10 @@ class SpeakerDiarization:
             raise e
             
     def identify_speakers(self, audio_path: str, num_speakers: int = None) -> List[Dict]:
-        """Speaker Diarization mit PyAnnote"""
+        """Speaker Diarization mit PyAnnote oder Fallback"""
         if not self.available or not self.pipeline:
-            print("⚠️ Speaker Diarization not available - returning empty speaker list")
-            return []
+            print("⚠️ Speaker Diarization not available - using single speaker fallback")
+            return self._create_single_speaker_fallback(audio_path)
         
         preprocessed_path = None
         try:
@@ -114,9 +117,8 @@ class SpeakerDiarization:
             
         except Exception as e:
             print(f"❌ Speaker Diarization failed: {e}")
-            import traceback
-            traceback.print_exc()
-            return []
+            print("🔄 Falling back to single speaker mode")
+            return self._create_single_speaker_fallback(audio_path)
         
         finally:
             # Clean up temporary file
@@ -126,3 +128,38 @@ class SpeakerDiarization:
                     print(f"🧹 Cleaned up temporary file: {preprocessed_path}")
                 except Exception as e:
                     print(f"⚠️ Failed to clean up temporary file: {e}")
+    
+    def _create_single_speaker_fallback(self, audio_path: str) -> List[Dict]:
+        """Create a single speaker segment for the entire audio duration"""
+        try:
+            # Try to get audio duration
+            duration = 0
+            try:
+                audio, sr = librosa.load(audio_path, sr=None)
+                duration = len(audio) / sr
+                print(f"⏱️ Audio duration calculated: {duration:.2f} seconds")
+            except Exception as e:
+                print(f"⚠️ Could not calculate duration: {e}")
+                # Fallback to file size estimation
+                try:
+                    file_size = os.path.getsize(audio_path)
+                    duration = (file_size / 1024 / 1024) * 60  # Rough estimate
+                    print(f"⏱️ Estimated duration from file size: {duration:.2f} seconds")
+                except:
+                    duration = 300  # 5 minutes default
+            
+            return [{
+                "start": 0.0,
+                "end": duration,
+                "speaker": "SPEAKER_00",
+                "duration": duration
+            }]
+            
+        except Exception as e:
+            print(f"⚠️ Fallback speaker creation failed: {e}")
+            return [{
+                "start": 0.0,
+                "end": 300.0,  # 5 minutes default
+                "speaker": "SPEAKER_00", 
+                "duration": 300.0
+            }]
