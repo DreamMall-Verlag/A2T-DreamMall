@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A2T Service Test - Dashboard Integration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">🎤 A2T Service Dashboard Integration Test</h1>
+        
+        <!-- Service Status -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold">Service Status</h2>
+                <span id="serviceStatus" class="px-3 py-1 rounded-full text-sm font-medium bg-gray-200">Checking...</span>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <p class="text-sm text-gray-600">Service URL</p>
+                    <p id="serviceUrl" class="font-mono text-sm">-</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600">Last Check</p>
+                    <p id="lastCheck" class="text-sm">-</p>
+                </div>
+            </div>
+            
+            <button onclick="checkServiceHealth()" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                Service Prüfen
+            </button>
+        </div>
+
+        <!-- Embedded Service Test -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold">Embedded Service Test</h2>
+                <button onclick="toggleEmbedded()" id="toggleBtn" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+                    Service Einbetten
+                </button>
+            </div>
+            
+            <div id="embeddedContainer" class="hidden border rounded-lg overflow-hidden" style="height: 600px;">
+                <div class="flex items-center justify-between p-3 bg-gray-100 border-b">
+                    <span class="font-medium">🎤 A2T Service (Embedded)</span>
+                    <button onclick="closeEmbedded()" class="text-gray-500 hover:text-gray-700">✕</button>
+                </div>
+                <iframe id="serviceFrame" class="w-full" style="height: calc(600px - 50px); border: none;"></iframe>
+            </div>
+        </div>
+
+        <!-- Configuration Test -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+            <h2 class="text-xl font-bold mb-4">Konfiguration</h2>
+            
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Umgebung</label>
+                    <select id="envSelect" onchange="updateConfig()" class="w-full p-2 border rounded">
+                        <option value="development">Development</option>
+                        <option value="production">Production</option>
+                        <option value="test">Test</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Service URL</label>
+                    <input id="serviceUrlInput" type="text" class="w-full p-2 border rounded" readonly>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">API URL</label>
+                    <input id="apiUrlInput" type="text" class="w-full p-2 border rounded" readonly>
+                </div>
+            </div>
+        </div>
+
+        <!-- Backend Integration Test -->
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-bold mb-4">Backend Integration Test</h2>
+            
+            <div class="space-y-4">
+                <button onclick="testBackendConnection()" class="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600">
+                    Backend Verbindung Testen
+                </button>
+                
+                <button onclick="testUserProtocols()" class="px-4 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-600">
+                    User-Protokolle Laden
+                </button>
+                
+                <div id="testResults" class="mt-4 p-4 bg-gray-100 rounded hidden">
+                    <h3 class="font-bold mb-2">Test-Ergebnisse:</h3>
+                    <pre id="testOutput" class="text-sm"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // A2T Service Configuration (kopiert aus der Vue-App)
+        const A2T_CONFIG = {
+            development: {
+                serviceUrl: 'http://localhost:39291/web',
+                apiUrl: 'http://localhost:39291/api/v1',
+                enabled: true
+            },
+            production: {
+                serviceUrl: '/a2t/web',
+                apiUrl: '/a2t/api/v1',
+                enabled: true
+            },
+            test: {
+                serviceUrl: 'http://localhost:39291/web',
+                apiUrl: 'http://localhost:39291/api/v1',
+                enabled: false
+            }
+        };
+
+        let currentConfig = A2T_CONFIG.development;
+        let isEmbedded = false;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updateConfig();
+            checkServiceHealth();
+        });
+
+        function updateConfig() {
+            const env = document.getElementById('envSelect').value;
+            currentConfig = A2T_CONFIG[env];
+            
+            document.getElementById('serviceUrlInput').value = currentConfig.serviceUrl;
+            document.getElementById('apiUrlInput').value = currentConfig.apiUrl;
+            document.getElementById('serviceUrl').textContent = currentConfig.serviceUrl;
+            
+            checkServiceHealth();
+        }
+
+        async function checkServiceHealth() {
+            const statusEl = document.getElementById('serviceStatus');
+            const lastCheckEl = document.getElementById('lastCheck');
+            
+            statusEl.textContent = 'Checking...';
+            statusEl.className = 'px-3 py-1 rounded-full text-sm font-medium bg-yellow-200 text-yellow-800';
+            
+            try {
+                const response = await fetch(currentConfig.serviceUrl, { 
+                    method: 'HEAD',
+                    mode: 'no-cors' // Für Cross-Origin-Tests
+                });
+                
+                statusEl.textContent = '✅ Service Verfügbar';
+                statusEl.className = 'px-3 py-1 rounded-full text-sm font-medium bg-green-200 text-green-800';
+            } catch (error) {
+                statusEl.textContent = '❌ Service Nicht Verfügbar';
+                statusEl.className = 'px-3 py-1 rounded-full text-sm font-medium bg-red-200 text-red-800';
+                
+                console.error('Service Health Check failed:', error);
+            }
+            
+            lastCheckEl.textContent = new Date().toLocaleTimeString();
+        }
+
+        function toggleEmbedded() {
+            if (isEmbedded) {
+                closeEmbedded();
+            } else {
+                openEmbedded();
+            }
+        }
+
+        function openEmbedded() {
+            const container = document.getElementById('embeddedContainer');
+            const frame = document.getElementById('serviceFrame');
+            const toggleBtn = document.getElementById('toggleBtn');
+            
+            frame.src = currentConfig.serviceUrl;
+            container.classList.remove('hidden');
+            toggleBtn.textContent = 'Service Schließen';
+            toggleBtn.classList.remove('bg-green-500', 'hover:bg-green-600');
+            toggleBtn.classList.add('bg-red-500', 'hover:bg-red-600');
+            
+            isEmbedded = true;
+        }
+
+        function closeEmbedded() {
+            const container = document.getElementById('embeddedContainer');
+            const frame = document.getElementById('serviceFrame');
+            const toggleBtn = document.getElementById('toggleBtn');
+            
+            frame.src = '';
+            container.classList.add('hidden');
+            toggleBtn.textContent = 'Service Einbetten';
+            toggleBtn.classList.remove('bg-red-500', 'hover:bg-red-600');
+            toggleBtn.classList.add('bg-green-500', 'hover:bg-green-600');
+            
+            isEmbedded = false;
+        }
+
+        async function testBackendConnection() {
+            showTestResults('Backend-Verbindung wird getestet...');
+            
+            try {
+                // Simuliere Backend-API-Call
+                const response = await fetch('/api/meeting-protocol/user-protocols', {
+                    headers: {
+                        'Authorization': 'Bearer TEST_TOKEN'
+                    }
+                });
+                
+                showTestResults(`Backend Test:\nStatus: ${response.status}\nURL: ${response.url}`);
+            } catch (error) {
+                showTestResults(`Backend Test Fehler:\n${error.message}`);
+            }
+        }
+
+        async function testUserProtocols() {
+            showTestResults('User-Protokolle werden geladen...');
+            
+            try {
+                // Simuliere Protokoll-Laden
+                const mockProtocols = [
+                    { id: 1, name: 'Meeting 2024-01-15', date: '2024-01-15' },
+                    { id: 2, name: 'Team Standup', date: '2024-01-14' }
+                ];
+                
+                showTestResults(`Mock User-Protokolle:\n${JSON.stringify(mockProtocols, null, 2)}`);
+            } catch (error) {
+                showTestResults(`Protokoll-Test Fehler:\n${error.message}`);
+            }
+        }
+
+        function showTestResults(content) {
+            const resultsEl = document.getElementById('testResults');
+            const outputEl = document.getElementById('testOutput');
+            
+            outputEl.textContent = content;
+            resultsEl.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
