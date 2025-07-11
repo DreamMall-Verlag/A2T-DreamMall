@@ -42,9 +42,11 @@
 
 #### 🤖 Intelligente Protokoll-Generierung
 - **Ollama LLM Integration** für lokale KI-Verarbeitung
+- **Strukturiertes 9-Punkte-Schema** für professionelle Meeting-Protokolle
 - **Deutsche Sprachoptimierung** für Business-Kontext
 - **Automatische Extraktion** von Agenda-Punkten, Entscheidungen, Action Items
 - **On-Demand-Generierung** per Klick (nicht automatisch)
+- **JSON-Prompt-Export** für externe LLM-Tools (ChatGPT, Claude, etc.)
 
 #### 🌐 Moderne Web-Interface
 - **🎨 Professionelles Design** mit Tailwind CSS
@@ -170,9 +172,84 @@ curl http://localhost:5000/api/v1/status/{job_id}
 
 ### 🤖 KI-Protokoll-Generierung
 - **On-Demand**: Protokoll wird erst nach Klick generiert
+- **Strukturiertes 9-Punkte-Schema**: Professionelle Meeting-Protokolle nach Branchen-Standard
+- **Modell-Auswahl**: Unterstützt verschiedene Ollama-LLM-Modelle
+- **JSON-Prompt-Export**: Strukturierte Prompts für externe LLM-Tools
 - **Loading-Animation**: Visuelles Feedback während Generierung
 - **Download-Funktion**: Protokoll als .txt-Datei herunterladen
-- **Strukturierte Ausgabe**: Agenda, Entscheidungen, Action Items
+- **Strukturierte Ausgabe**: Anwesende, Terminabsprachen, Vereinbarungen, Action Items
+
+---
+
+## 🎯 Neue Features: Strukturierte 9-Punkte-Protokolle
+
+### ✨ Professionelle Meeting-Protokolle
+
+Das A2T-DreamMall System generiert jetzt strukturierte Meeting-Protokolle nach einem bewährten 9-Punkte-Schema:
+
+1. **Anwesende** - Teilnehmer mit ihren Namen
+2. **Thema des Gesprächs** - Hauptthema und Zweck des Meetings
+3. **Terminabsprachen** - Alle erwähnten Termine und Deadlines
+4. **Vereinbarungen** - Getroffene Beschlüsse und Entscheidungen
+5. **Übereinkünfte** - Zusätzliche Absprachen zwischen Teilnehmern
+6. **Besprochene Probleme** - Identifizierte Herausforderungen
+7. **Offene Punkte für das nächste Gespräch** - Vertagte Themen
+8. **Nächster Termin zum Treffen** - Geplante Folgetermine
+9. **Aufgaben** - Konkrete Aufgaben mit Verantwortlichen
+
+### 🔧 Flexible Nutzung
+
+#### **Lokale Ollama-Integration**
+- Vollautomatische Protokoll-Generierung mit verschiedenen LLM-Modellen
+- Modell-Auswahl: llama3, mistral, qwen, etc.
+- Echtzeit-Verarbeitung ohne Cloud-Abhängigkeiten
+
+#### **Externe LLM-Tools**
+- **JSON-Prompt-Export** für ChatGPT, Claude, Perplexity, etc.
+- **Strukturierte Prompts** mit allen Meeting-Informationen
+- **Copy & Paste** für einfache Nutzung
+
+#### **API-Integration**
+- **REST-Endpunkte** für eigene Anwendungen
+- **Webhook-Support** für automatisierte Workflows
+- **Batch-Processing** für mehrere Meetings
+
+### 🚀 Verwendungsszenarien
+
+#### **Szenario 1: Lokale Ollama-Nutzung**
+```bash
+# 1. Ollama starten
+ollama serve
+
+# 2. Modell laden
+ollama pull llama3:latest
+
+# 3. A2T-Service starten
+python src/api/app.py
+
+# 4. Meeting-Audio hochladen → Automatisches 9-Punkte-Protokoll
+```
+
+#### **Szenario 2: Externe LLM-Tools**
+```bash
+# 1. Audio transkribieren
+# 2. "Strukturierter Prompt" klicken
+# 3. JSON-Prompt kopieren
+# 4. In ChatGPT/Claude einfügen
+# 5. Professionelles Protokoll erhalten
+```
+
+#### **Szenario 3: API-Integration**
+```javascript
+// Eigene Anwendung
+const response = await fetch('/api/v1/protocol/prompt', {
+  method: 'POST',
+  body: JSON.stringify({ transcript, speakers })
+});
+
+const prompt = response.json();
+const protocol = await callCustomLLM(prompt);
+```
 
 ---
 
@@ -266,26 +343,69 @@ GET /health
 
 ## � Beispiel-Ergebnis
 
-Das System generiert strukturierte Meeting-Protokolle wie:
+Das System generiert strukturierte 9-Punkte-Meeting-Protokolle wie:
 
 ```markdown
-# Meeting-Protokoll
+# Meeting-Protokoll (Kurzfassung)
 
-## Teilnehmer
-- Vera Becker (neue Assistentin)
-- Mia Storm (Designerin)
+**1. Anwesende:**
+Alex, Claudia, Heimo
+(abwesend: Eva Schilling, Anne Lindner)
 
-## Agenda-Punkte
-- Verteilung der wichtigsten Aufgaben für neue Kollektion
-- Vertrieb, Besuch von Simon Götz
+**2. Thema des Gesprächs:**
+Vorbereitung und Aufgabenverteilung zur Produktion der neuen Kollektion
 
-## Wichtige Entscheidungen
-- Entscheidung für Baumwollstoffe bei der neuen Kollektion
-- Bestellung von Stoffmustern bis Ende nächster Woche
+**3. Terminabsprachen:**
+- Stoffe müssen bis **spätestens Mitte August** verfügbar sein
+- Besprechungsdauer ursprünglich auf 45 Minuten angesetzt
 
-## Action Items
-- [ ] Stoffmuster bestellen - Eva Schilling - Ende nächster Woche
-- [ ] Kontakt mit neuem Lieferanten - Frau Becker
+**4. Vereinbarungen:**
+- Verwendung von **Baumwollstoffen** für neue Kollektion
+- Stoffmuster und Preise werden beim neuen Lieferanten angefragt
+
+**5. Übereinkünfte:**
+- Eva Schilling übernimmt die Kommunikation mit dem Lieferanten
+- Vera Becker erstellt das Protokoll und informiert Eva und Anne per Mail
+
+**6. Besprochene Probleme:**
+- Unsicherheit bzgl. **Lieferfristen** des neuen Stoff-Lieferanten
+- Gespräch driftet kurz in Themen zur Konkurrenz ab
+
+**7. Offene Punkte für das nächste Gespräch:**
+- Klärung: konkrete **Lieferzeiten** der Stoffe
+- Rückmeldung von Eva Schilling zur Bestellung
+
+**8. Nächster Termin zum Treffen:**
+— nicht festgelegt
+
+**9. Aufgaben:**
+- **Eva Schilling**: Stoffmuster Baumwolle anfordern, Preise & Mengenrabatte einholen
+- **Vera Becker**: Protokoll versenden an alle Beteiligten
+```
+
+### 🔧 Strukturierter Prompt für externe LLM-Tools
+
+Das System kann strukturierte JSON-Prompts für externe LLM-Tools generieren:
+
+```json
+{
+  "role": "system",
+  "content": "Du bist ein professioneller Meeting-Protokollant. Fasse das folgende Transkript sehr kompakt in ein strukturiertes Ergebnisprotokoll mit maximal 9 Punkten zusammen...",
+  "format": "9-point-structured-protocol",
+  "transcript_length": 2456,
+  "speaker_count": 3,
+  "expected_sections": [
+    "Anwesende",
+    "Thema des Gesprächs",
+    "Terminabsprachen",
+    "Vereinbarungen",
+    "Übereinkünfte",
+    "Besprochene Probleme",
+    "Offene Punkte für das nächste Gespräch",
+    "Nächster Termin zum Treffen",
+    "Aufgaben"
+  ]
+}
 ```
 
 ---
@@ -296,7 +416,9 @@ Das System generiert strukturierte Meeting-Protokolle wie:
 ✅ **Deutsche Transkription**: Business-Meeting perfekt transkribiert  
 ✅ **Zeitstempel-Segmente**: Präzise Navigation durch Gespräch  
 ✅ **Speaker-Erkennung**: Automatische Sprecher-Identifikation  
-✅ **Protokoll-Generierung**: Strukturierte Ausgabe mit Action Items  
+✅ **9-Punkte-Protokoll-Generierung**: Strukturierte Ausgabe nach Branchen-Standard  
+✅ **Modell-Auswahl**: Verschiedene Ollama-LLM-Modelle unterstützt  
+✅ **JSON-Prompt-Export**: Für externe LLM-Tools (ChatGPT, Claude, etc.)  
 ✅ **Moderne Web-Interface**: Benutzerfreundliche, responsive Bedienung  
 ✅ **API-Endpunkte**: Vollständig funktional mit erweiterten Datenstrukturen  
 ✅ **Fehlerbehandlung**: Robuste Error-Recovery mit Fallback-Mechanismen  
@@ -315,6 +437,27 @@ const response = await fetch('/api/v1/transcribe', {
 
 // Status-Monitoring
 const status = await fetch(`/api/v1/status/${jobId}`);
+
+// Strukturierte Protokoll-Generierung
+const protocol = await fetch('/api/v1/generate-protocol', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    transcript: "...",
+    speakers: [...],
+    model: "llama3:latest"
+  })
+});
+
+// JSON-Prompt für externe LLM-Tools
+const prompt = await fetch('/api/v1/protocol/prompt', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    transcript: "...",
+    speakers: [...]
+  })
+});
 ```
 
 ### Frontend-Integration
@@ -507,6 +650,11 @@ MIT License - siehe [LICENSE](LICENSE) für Details.
 **Qualität**: Produktionstauglich  
 **Testing**: End-to-End Tests erfolgreich  
 **Integration**: DreamMall-Ready  
+**Neue Features**: 
+- ✅ Strukturierte 9-Punkte-Protokolle
+- ✅ JSON-Prompt-Export für externe LLM-Tools
+- ✅ Modell-Auswahl für verschiedene Ollama-LLMs
+- ✅ API-Endpunkte für Protokoll-Generierung
 **Next Steps**: Docker-Deployment, erweiterte Admin-Features
 
 ---
@@ -1250,8 +1398,20 @@ response = requests.post("http://localhost:5000/api/v1/transcribe", ...)
 ### **One-Time Setup, dann nie wieder Probleme:**
 ```powershell
 # Einmalig: pyenv-win + Poetry installieren
-# Dann für jedes Projekt: pyenv local 3.10.11 + poetry install
-# Fertig! 🎉
+git clone https://github.com/pyenv-win/pyenv-win.git $env:USERPROFILE\.pyenv
+$env:PYENV_ROOT = "$env:USERPROFILE\.pyenv"
+$env:PATH = "$env:PYENV_ROOT\pyenv-win\bin;$env:PYENV_ROOT\pyenv-win\shims;$env:PATH"
+
+# PATH dauerhaft setzen
+[Environment]::SetEnvironmentVariable("PYENV_ROOT", $env:PYENV_ROOT, "User")
+[Environment]::SetEnvironmentVariable("PATH", "$env:PYENV_ROOT\pyenv-win\bin;$env:PYENV_ROOT\pyenv-win\shims;$([Environment]::GetEnvironmentVariable('PATH', 'User'))", "User")
+
+# Python 3.10.11 installieren
+pyenv install 3.10.11
+pyenv local 3.10.11
+
+# Poetry installieren
+pip install poetry
 ```
 
 ## ✅ Status: Audio-zu-Text-Kern vollständig

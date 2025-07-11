@@ -10,6 +10,7 @@ import librosa
 import soundfile as sf
 import tempfile
 import numpy as np
+import requests
 
 # Add src to path for imports
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
@@ -292,6 +293,57 @@ def get_available_models():
         "model_info": whisper_client.get_model_info()
     })
 
+@app.route('/api/v1/ollama/models', methods=['GET'])
+def get_ollama_models():
+    """Get available Ollama models for protocol generation"""
+    try:
+        if not ollama_client.available:
+            return jsonify({
+                "available": False,
+                "error": "Ollama not available",
+                "models": []
+            })
+        
+        # Get models from Ollama
+        response = requests.get(f"{A2TSettings.OLLAMA_BASE_URL}/api/tags", timeout=5)
+        
+        if response.status_code == 200:
+            models_data = response.json()
+            
+            # Format models for frontend
+            formatted_models = []
+            for model in models_data.get('models', []):
+                formatted_models.append({
+                    "name": model.get('name', 'Unknown'),
+                    "size": model.get('size', 0),
+                    "size_formatted": f"{model.get('size', 0) / 1024 / 1024 / 1024:.1f} GB",
+                    "parameter_size": model.get('details', {}).get('parameter_size', 'Unknown'),
+                    "quantization": model.get('details', {}).get('quantization_level', 'Unknown'),
+                    "family": model.get('details', {}).get('family', 'Unknown'),
+                    "modified": model.get('modified_at', ''),
+                    "recommended": model.get('name', '').startswith('llama3')  # Recommend llama3 models
+                })
+            
+            return jsonify({
+                "available": True,
+                "models": formatted_models,
+                "current_default": A2TSettings.OLLAMA_MODEL,
+                "base_url": A2TSettings.OLLAMA_BASE_URL
+            })
+        else:
+            return jsonify({
+                "available": False,
+                "error": f"Ollama API returned status {response.status_code}",
+                "models": []
+            })
+            
+    except Exception as e:
+        return jsonify({
+            "available": False,
+            "error": f"Failed to fetch Ollama models: {str(e)}",
+            "models": []
+        })
+
 @app.route('/api/v1/transcribe', methods=['POST'])
 def transcribe_audio():
     """Audio-Upload und Transkription"""
@@ -367,7 +419,7 @@ def get_job_status(job_id: str):
 
 @app.route('/api/v1/generate-protocol', methods=['POST'])
 def generate_protocol_endpoint():
-    """Generate meeting protocol with custom speaker names"""
+    """Generate meeting protocol with custom speaker names and model selection"""
     try:
         data = request.get_json()
         
@@ -377,9 +429,11 @@ def generate_protocol_endpoint():
         transcript = data.get('transcript', '')
         speakers = data.get('speakers', [])
         metadata = data.get('metadata', {})
+        selected_model = data.get('model', A2TSettings.OLLAMA_MODEL)  # Allow model selection
         
-        print(f"🤖 [PROTOCOL] Generating protocol with custom speaker names...")
+        print(f"🤖 [PROTOCOL] Generating protocol with model: {selected_model}")
         print(f"📝 [PROTOCOL] Speakers: {[s.get('name', 'Unknown') for s in speakers]}")
+        print(f"📊 [PROTOCOL] Transcript length: {len(transcript)} characters")
         
         # Try to generate protocol with Ollama if available
         if ollama_client.available:
@@ -387,15 +441,18 @@ def generate_protocol_endpoint():
                 protocol_text = ollama_client.generate_protocol(
                     transcript=transcript,
                     speakers=speakers,
-                    model=A2TSettings.OLLAMA_MODEL
+                    model=selected_model  # Use selected model
                 )
-                print(f"✅ [PROTOCOL] Ollama protocol generated successfully")
+                print(f"✅ [PROTOCOL] Ollama protocol generated successfully with {selected_model}")
                 
                 return jsonify({
+                    "success": True,
                     "protocol": protocol_text,
                     "method": "ollama",
+                    "model_used": selected_model,
                     "speakers": speakers,
-                    "metadata": metadata
+                    "metadata": metadata,
+                    "generation_time": datetime.now().isoformat()
                 })
                 
             except Exception as ollama_error:
@@ -414,33 +471,71 @@ def generate_protocol_endpoint():
 ## Allgemeine Informationen
 - **Datum:** {now.strftime('%d.%m.%Y')}
 - **Uhrzeit:** {now.strftime('%H:%M')}
-- **Dauer:** {metadata.get('duration', 0):.0f} Sekunden
+- **Dauer:** {metadata.get('duration_formatted', 'Unbekannt')}
 - **Teilnehmer:** {', '.join(speaker_names)}
 - **Sprache:** {metadata.get('language', 'de').upper()}
 
 ## Transkription
-
 {transcript}
 
-## Zusammenfassung
-Das Meeting wurde automatisch transkribiert und die Sprecher wurden identifiziert.
-
 ## Hinweise
-- Dieses Protokoll wurde automatisch generiert
-- Bitte überprüfen Sie die Inhalte auf Vollständigkeit und Richtigkeit
-- Sprecher-Namen wurden manuell zugeordnet
+- Automatisch generiert aus Audio-Transkription
+- Ollama-LLM nicht verfügbar - Fallback-Protokoll verwendet
+- Für erweiterte Protokolle: Ollama-Server starten und Modelle laden
 """
         
         return jsonify({
+            "success": True,
             "protocol": fallback_protocol,
             "method": "fallback",
+            "model_used": "none",
             "speakers": speakers,
-            "metadata": metadata
+            "metadata": metadata,
+            "generation_time": now.isoformat()
         })
         
     except Exception as e:
-        print(f"❌ [PROTOCOL] Generation failed: {e}")
-        return jsonify({"error": f"Protocol generation failed: {str(e)}"}), 500
+        print(f"❌ [PROTOCOL] Protocol generation failed: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": f"Protocol generation failed: {str(e)}"
+        }), 500
+
+@app.route('/api/v1/protocol/prompt', methods=['POST'])
+def get_protocol_prompt():
+    """Gibt einen strukturierten JSON-Prompt für das 9-Punkte-Protokoll zurück"""
+    try:
+        data = request.get_json()
+        
+        if not data or 'transcript' not in data:
+            return jsonify({"error": "Missing transcript data"}), 400
+        
+        transcript = data.get('transcript', '')
+        speakers = data.get('speakers', [])
+        
+        # Strukturierten Prompt generieren
+        structured_prompt = ollama_client.get_structured_protocol_prompt(transcript, speakers)
+        
+        return jsonify({
+            "success": True,
+            "prompt": structured_prompt,
+            "usage_example": {
+                "description": "Verwende diesen Prompt mit deinem bevorzugten LLM",
+                "api_call_example": {
+                    "model": "llama3:latest",
+                    "messages": [structured_prompt],
+                    "temperature": 0.3,
+                    "max_tokens": 1000
+                }
+            }
+        })
+        
+    except Exception as e:
+        print(f"❌ [PROMPT] Prompt generation failed: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": f"Prompt generation failed: {str(e)}"
+        }), 500
 
 @app.route('/web')
 @app.route('/web/')
