@@ -11,6 +11,7 @@ import soundfile as sf
 import tempfile
 import numpy as np
 import requests
+import logging
 
 # Add src to path for imports
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
@@ -30,6 +31,10 @@ CORS(app)
 
 # Job-Management für Async Processing
 active_jobs = {}
+
+def log_progress(job_id, level, message, step=None):
+    """Helper function to log progress to console"""
+    print(f"[{level.upper()}] {message}")
 
 class A2TJob:
     def __init__(self, job_id: str, audio_file: str, model: str = None):
@@ -57,17 +62,17 @@ protocol_generator = ProtocolGenerator(ollama_client, whisper_client, diarizatio
 def process_audio_async(job: A2TJob):
     """Background processing function with enhanced debugging"""
     try:
-        print(f"🚀 [DEBUG] Starting async processing for job {job.job_id}")
+        log_progress(job.job_id, "info", f"Starting async processing for job {job.job_id}")
         job.status = "processing"
         job.progress = 10
         
-        print(f"🎵 Processing audio file: {job.audio_file}")
-        print(f"🎯 Using Whisper model: {job.model}")
+        log_progress(job.job_id, "info", f"Processing audio file: {job.audio_file}")
+        log_progress(job.job_id, "info", f"Using Whisper model: {job.model}")
         
         # File path should already be absolute
         audio_path = job.audio_file
-        print(f"📍 Using path: {audio_path}")
-        print(f"📂 File exists: {os.path.exists(audio_path)}")
+        log_progress(job.job_id, "info", f"Using path: {audio_path}")
+        log_progress(job.job_id, "info", f"File exists: {os.path.exists(audio_path)}")
         
         if not os.path.exists(audio_path):
             # Try different path variations
@@ -75,35 +80,35 @@ def process_audio_async(job: A2TJob):
             alt_path = os.path.join("temp", "uploads", base_name)
             abs_alt_path = os.path.abspath(alt_path)
             
-            print(f"🔍 Trying alternative path: {abs_alt_path}")
+            log_progress(job.job_id, "info", f"Trying alternative path: {abs_alt_path}")
             if os.path.exists(abs_alt_path):
                 audio_path = abs_alt_path
-                print(f"✅ Found file at: {audio_path}")
+                log_progress(job.job_id, "info", f"Found file at: {audio_path}")
             else:
                 raise FileNotFoundError(f"Audio file not found at: {audio_path} or {abs_alt_path}")
         
-        print(f"✅ File confirmed: {audio_path}")
-        print(f"📏 File size: {os.path.getsize(audio_path)} bytes")
+        log_progress(job.job_id, "info", f"File confirmed: {audio_path}")
+        log_progress(job.job_id, "info", f"File size: {os.path.getsize(audio_path)} bytes")
         
         # Convert audio to WAV for better Whisper compatibility
-        print(f"🔄 [DEBUG] Converting audio to optimal WAV format...")
+        log_progress(job.job_id, "info", f"Converting audio to optimal WAV format...")
         converted_audio_path = convert_audio_to_wav(audio_path)
-        print(f"✅ [DEBUG] Audio conversion completed: {converted_audio_path}")
+        log_progress(job.job_id, "info", f"Audio conversion completed: {converted_audio_path}")
         
         # Process audio through pipeline with selected model
         job.progress = 20
-        print(f"🔄 [DEBUG] Starting protocol generation with model: {job.model}")
+        log_progress(job.job_id, "info", f"Starting protocol generation with model: {job.model}")
         
         # Add more specific error handling
         try:
             # Pass converted audio and model to protocol generator
-            print(f"🎤 [DEBUG] Calling protocol_generator.process_audio_to_protocol")
+            log_progress(job.job_id, "info", f"Calling protocol_generator.process_audio_to_protocol")
             result = protocol_generator.process_audio_to_protocol(converted_audio_path, whisper_model=job.model)
-            print(f"✅ [DEBUG] Protocol generation completed successfully")
+            log_progress(job.job_id, "info", f"Protocol generation completed successfully")
             
         except Exception as processing_error:
-            print(f"❌ [DEBUG] Protocol generation failed: {processing_error}")
-            print(f"🔧 [DEBUG] Creating fallback result due to error: {type(processing_error).__name__}")
+            log_progress(job.job_id, "error", f"Protocol generation failed: {processing_error}")
+            log_progress(job.job_id, "info", f"Creating fallback result due to error: {type(processing_error).__name__}")
             
             # Create fallback result
             from services.protocol.generator import ProtocolData
@@ -132,20 +137,20 @@ def process_audio_async(job: A2TJob):
         if converted_audio_path != audio_path:
             try:
                 os.remove(converted_audio_path)
-                print(f"🧹 [DEBUG] Cleaned up converted audio file: {converted_audio_path}")
+                log_progress(job.job_id, "info", f"Cleaned up converted audio file: {converted_audio_path}")
             except Exception as cleanup_error:
-                print(f"⚠️ [DEBUG] Failed to cleanup converted file: {cleanup_error}")
+                log_progress(job.job_id, "error", f"Failed to cleanup converted file: {cleanup_error}")
         
-        print(f"✅ [DEBUG] Audio processing completed for job {job.job_id}")
-        print(f"📊 [DEBUG] Result metadata: {result.metadata}")
+        log_progress(job.job_id, "info", f"Audio processing completed for job {job.job_id}")
+        log_progress(job.job_id, "info", f"Result metadata: {result.metadata}")
         
     except Exception as e:
         job.status = "failed"
         job.error = str(e)
-        print(f"❌ [DEBUG] Audio processing failed for job {job.job_id}: {e}")
-        print(f"🔍 [DEBUG] Error type: {type(e).__name__}")
+        log_progress(job.job_id, "error", f"Audio processing failed for job {job.job_id}: {e}")
+        log_progress(job.job_id, "info", f"Error type: {type(e).__name__}")
         import traceback
-        print(f"📋 [DEBUG] Full traceback:")
+        log_progress(job.job_id, "info", f"Full traceback:")
         traceback.print_exc()
 
 def convert_audio_to_wav(audio_path: str) -> str:
@@ -154,18 +159,18 @@ def convert_audio_to_wav(audio_path: str) -> str:
     Returns path to converted WAV file (or original if already optimal)
     """
     try:
-        print(f"🔄 [AUDIO] Checking audio format: {audio_path}")
+        log_progress("", "info", f"Checking audio format: {audio_path}")
         
         # Check if file exists
         if not os.path.exists(audio_path):
             raise FileNotFoundError(f"Audio file not found: {audio_path}")
         
         file_size = os.path.getsize(audio_path)
-        print(f"📏 [AUDIO] Original file size: {file_size} bytes")
+        log_progress("", "info", f"Original file size: {file_size} bytes")
         
         # Get file extension
         _, ext = os.path.splitext(audio_path.lower())
-        print(f"📁 [AUDIO] File extension: {ext}")
+        log_progress("", "info", f"File extension: {ext}")
         
         # If already WAV and reasonable size, check if it needs processing
         if ext == '.wav':
@@ -173,24 +178,24 @@ def convert_audio_to_wav(audio_path: str) -> str:
                 # Quick check if WAV is already optimal
                 audio, sr = librosa.load(audio_path, sr=None, duration=1.0)  # Load just 1 second to test
                 if sr == 16000 and len(audio.shape) == 1:  # Mono, 16kHz
-                    print(f"✅ [AUDIO] WAV file already optimal: {sr}Hz, mono")
+                    log_progress("", "info", f"WAV file already optimal: {sr}Hz, mono")
                     return audio_path
                 else:
-                    print(f"🔄 [AUDIO] WAV needs reprocessing: {sr}Hz, shape: {audio.shape}")
+                    log_progress("", "info", f"WAV needs reprocessing: {sr}Hz, shape: {audio.shape}")
             except Exception as e:
-                print(f"⚠️ [AUDIO] WAV check failed, will reprocess: {e}")
+                log_progress("", "warning", f"WAV check failed, will reprocess: {e}")
         
         # Load full audio with librosa (handles most formats)
-        print(f"🔄 [AUDIO] Loading audio with librosa...")
+        log_progress("", "info", f"Loading audio with librosa...")
         audio, sr = librosa.load(audio_path, sr=16000, mono=True)
-        print(f"✅ [AUDIO] Audio loaded: {len(audio)} samples at {sr}Hz")
+        log_progress("", "info", f"Audio loaded: {len(audio)} samples at {sr}Hz")
         
         # Handle edge cases
         if len(audio) == 0:
-            print("⚠️ [AUDIO] Empty audio detected, creating silence")
+            log_progress("", "warning", f"Empty audio detected, creating silence")
             audio = np.zeros(16000)  # 1 second silence
         elif len(audio) < 1600:  # Less than 0.1 seconds
-            print(f"⚠️ [AUDIO] Very short audio ({len(audio)} samples), padding")
+            log_progress("", "warning", f"Very short audio ({len(audio)} samples), padding")
             audio = np.pad(audio, (0, 16000 - len(audio)), mode='constant')
         
         # Normalize audio to prevent clipping
@@ -198,9 +203,9 @@ def convert_audio_to_wav(audio_path: str) -> str:
             max_val = np.max(np.abs(audio))
             if max_val > 1.0:
                 audio = audio / max_val * 0.95
-                print(f"✅ [AUDIO] Normalized audio (max was: {max_val:.3f})")
+                log_progress("", "info", f"Normalized audio (max was: {max_val:.3f})")
         else:
-            print("⚠️ [AUDIO] Audio appears to be silent")
+            log_progress("", "warning", f"Audio appears to be silent")
         
         # Create output path for converted WAV
         temp_dir = tempfile.gettempdir()
@@ -208,7 +213,7 @@ def convert_audio_to_wav(audio_path: str) -> str:
         wav_filename = f"{base_name}_converted.wav"
         wav_path = os.path.join(temp_dir, wav_filename)
         
-        print(f"💾 [AUDIO] Saving converted WAV to: {wav_path}")
+        log_progress("", "info", f"Saving converted WAV to: {wav_path}")
         
         # Save as WAV with consistent format (16-bit PCM, 16kHz, mono)
         sf.write(wav_path, audio, 16000, format='WAV', subtype='PCM_16')
@@ -216,15 +221,15 @@ def convert_audio_to_wav(audio_path: str) -> str:
         # Verify converted file
         if os.path.exists(wav_path):
             converted_size = os.path.getsize(wav_path)
-            print(f"✅ [AUDIO] Conversion successful: {converted_size} bytes")
-            print(f"📊 [AUDIO] Duration: {len(audio) / 16000:.2f} seconds")
+            log_progress("", "info", f"Conversion successful: {converted_size} bytes")
+            log_progress("", "info", f"Duration: {len(audio) / 16000:.2f} seconds")
             return wav_path
         else:
             raise Exception("Failed to save converted WAV file")
         
     except Exception as e:
-        print(f"❌ [AUDIO] Conversion failed: {e}")
-        print(f"🔄 [AUDIO] Using original file: {audio_path}")
+        log_progress("", "error", f"Conversion failed: {e}")
+        log_progress("", "info", f"Using original file: {audio_path}")
         import traceback
         traceback.print_exc()
         return audio_path
@@ -292,6 +297,84 @@ def get_available_models():
         "available_models": whisper_client.AVAILABLE_MODELS,
         "model_info": whisper_client.get_model_info()
     })
+
+@app.route('/api/v1/models/overview', methods=['GET'])
+def get_models_overview():
+    """Get comprehensive overview of all loaded AI models"""
+    try:
+        overview = {
+            "timestamp": datetime.now().isoformat(),
+            "service_status": "operational",
+            "models": {
+                "whisper": {
+                    "status": "loaded",
+                    "current_model": whisper_client.current_model_size,
+                    "model_info": whisper_client.get_model_info(),
+                    "available_models": whisper_client.AVAILABLE_MODELS,
+                    "version": getattr(whisper_client, 'version', 'unknown'),
+                    "device": getattr(whisper_client, 'device', 'cpu'),
+                    "model_path": getattr(whisper_client, 'model_path', 'unknown')
+                },
+                "pyannote": {
+                    "status": "loaded" if hasattr(diarization_client, 'pipeline') and diarization_client.pipeline else "not_loaded",
+                    "model_name": "pyannote/speaker-diarization-3.1",
+                    "auth_token": "configured" if A2TSettings.HUGGINGFACE_TOKEN else "not_configured",
+                    "version": getattr(diarization_client, 'version', 'unknown'),
+                    "capabilities": ["speaker_diarization", "voice_activity_detection"]
+                },
+                "ollama": {
+                    "status": "available" if ollama_client.available else "unavailable",
+                    "base_url": A2TSettings.OLLAMA_BASE_URL,
+                    "default_model": A2TSettings.OLLAMA_MODEL,
+                    "available_models": [],
+                    "server_version": "unknown"
+                }
+            },
+            "configuration": {
+                "language": A2TSettings.WHISPER_LANGUAGE,
+                "output_format": "structured_protocol",
+                "audio_formats": ["mp3", "wav", "m4a", "mp4", "webm", "ogg"]
+            },
+            "memory_usage": {
+                "estimated_whisper_size": f"{whisper_client.get_model_info().get('size_mb', 0)} MB",
+                "estimated_total": "calculating..."
+            }
+        }
+        
+        # Try to get Ollama models if available
+        if ollama_client.available:
+            try:
+                response = requests.get(f"{A2TSettings.OLLAMA_BASE_URL}/api/tags", timeout=5)
+                if response.status_code == 200:
+                    models_data = response.json()
+                    overview["models"]["ollama"]["available_models"] = [
+                        {
+                            "name": model.get('name', 'Unknown'),
+                            "size": model.get('size', 0),
+                            "size_formatted": f"{model.get('size', 0) / 1024 / 1024 / 1024:.1f} GB",
+                            "parameter_size": model.get('details', {}).get('parameter_size', 'Unknown'),
+                            "family": model.get('details', {}).get('family', 'Unknown'),
+                            "modified": model.get('modified_at', '')
+                        }
+                        for model in models_data.get('models', [])
+                    ]
+                
+                # Try to get server version
+                version_response = requests.get(f"{A2TSettings.OLLAMA_BASE_URL}/api/version", timeout=5)
+                if version_response.status_code == 200:
+                    version_data = version_response.json()
+                    overview["models"]["ollama"]["server_version"] = version_data.get('version', 'unknown')
+                    
+            except Exception as e:
+                overview["models"]["ollama"]["error"] = f"Failed to fetch Ollama details: {str(e)}"
+        
+        return jsonify(overview)
+        
+    except Exception as e:
+        return jsonify({
+            "error": f"Failed to get models overview: {str(e)}",
+            "timestamp": datetime.now().isoformat()
+        }), 500
 
 @app.route('/api/v1/ollama/models', methods=['GET'])
 def get_ollama_models():
@@ -368,13 +451,13 @@ def transcribe_audio():
     upload_path = os.path.join(upload_dir, upload_filename)
     audio_file.save(upload_path)
     
-    print(f"📁 File saved to: {upload_path}")
-    print(f"📂 File exists: {os.path.exists(upload_path)}")
-    print(f"🎯 Selected model: {selected_model}")
+    log_progress(job_id, "info", f"File saved to: {upload_path}")
+    log_progress(job_id, "info", f"File exists: {os.path.exists(upload_path)}")
+    log_progress(job_id, "info", f"Selected model: {selected_model}")
     
     # Ensure absolute path for job
     absolute_upload_path = os.path.abspath(upload_path)
-    print(f"📍 Absolute path: {absolute_upload_path}")
+    log_progress(job_id, "info", f"Absolute path: {absolute_upload_path}")
     
     # Create job with absolute path and model selection
     job = A2TJob(job_id, absolute_upload_path, selected_model)
@@ -431,9 +514,9 @@ def generate_protocol_endpoint():
         metadata = data.get('metadata', {})
         selected_model = data.get('model', A2TSettings.OLLAMA_MODEL)  # Allow model selection
         
-        print(f"🤖 [PROTOCOL] Generating protocol with model: {selected_model}")
-        print(f"📝 [PROTOCOL] Speakers: {[s.get('name', 'Unknown') for s in speakers]}")
-        print(f"📊 [PROTOCOL] Transcript length: {len(transcript)} characters")
+        log_progress("", "info", f"Generating protocol with model: {selected_model}")
+        log_progress("", "info", f"Speakers: {[s.get('name', 'Unknown') for s in speakers]}")
+        log_progress("", "info", f"Transcript length: {len(transcript)} characters")
         
         # Try to generate protocol with Ollama if available
         if ollama_client.available:
@@ -443,7 +526,7 @@ def generate_protocol_endpoint():
                     speakers=speakers,
                     model=selected_model  # Use selected model
                 )
-                print(f"✅ [PROTOCOL] Ollama protocol generated successfully with {selected_model}")
+                log_progress("", "info", f"Ollama protocol generated successfully with {selected_model}")
                 
                 return jsonify({
                     "success": True,
@@ -456,11 +539,11 @@ def generate_protocol_endpoint():
                 })
                 
             except Exception as ollama_error:
-                print(f"⚠️ [PROTOCOL] Ollama failed: {ollama_error}")
+                log_progress("", "error", f"Ollama failed: {ollama_error}")
                 # Fall through to fallback
         
         # Fallback protocol generation
-        print(f"🔄 [PROTOCOL] Using fallback protocol generation")
+        log_progress("", "info", f"Using fallback protocol generation")
         
         from datetime import datetime
         now = datetime.now()
@@ -495,7 +578,7 @@ def generate_protocol_endpoint():
         })
         
     except Exception as e:
-        print(f"❌ [PROTOCOL] Protocol generation failed: {str(e)}")
+        log_progress("", "error", f"Protocol generation failed: {str(e)}")
         return jsonify({
             "success": False,
             "error": f"Protocol generation failed: {str(e)}"
@@ -531,7 +614,7 @@ def get_protocol_prompt():
         })
         
     except Exception as e:
-        print(f"❌ [PROMPT] Prompt generation failed: {str(e)}")
+        log_progress("", "error", f"Prompt generation failed: {str(e)}")
         return jsonify({
             "success": False,
             "error": f"Prompt generation failed: {str(e)}"

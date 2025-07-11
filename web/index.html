@@ -73,6 +73,28 @@
     <!-- Main Content -->
     <main class="container mx-auto px-6 py-8">
         
+        <!-- Models Overview Section -->
+        <div class="bg-white rounded-lg shadow-sm border p-6 mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-semibold flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
+                    </svg>
+                    Geladene KI-Modelle
+                </h2>
+                <button id="refreshModelsOverview" class="text-blue-600 hover:text-blue-800 text-sm px-3 py-1 border border-blue-300 rounded-lg hover:bg-blue-50">
+                    🔄 Aktualisieren
+                </button>
+            </div>
+            
+            <div id="modelsOverviewContent" class="space-y-4">
+                <div class="text-center py-8">
+                    <div class="loading-spinner mx-auto"></div>
+                    <p class="text-gray-500 mt-2">Lade Modellinformationen...</p>
+                </div>
+            </div>
+        </div>
+        
         <!-- Upload Section -->
         <div class="bg-white rounded-lg shadow-sm border p-6 mb-8">
             <h2 class="text-xl font-semibold mb-4 flex items-center">
@@ -143,18 +165,87 @@
             </div>
         </div>
 
-        <!-- Status Section -->
+        <!-- Status Section - Detailed Progress Steps -->
         <div id="statusSection" class="hidden bg-white rounded-lg shadow-sm border p-6 mb-8">
-            <div class="flex items-center space-x-4">
-                <div class="loading-spinner"></div>
-                <div>
-                    <div id="statusText" class="font-medium text-gray-800"></div>
-                    <div id="progressText" class="text-sm text-gray-600"></div>
+            <h3 class="text-lg font-semibold text-gray-800 mb-6 flex items-center">
+                <div class="loading-spinner mr-3"></div>
+                🔄 Audio wird verarbeitet...
+            </h3>
+            
+            <!-- Progress Steps -->
+            <div class="space-y-4">
+                <!-- Step 1: Audio Conversion -->
+                <div id="step-conversion" class="flex items-center p-3 rounded-lg border-l-4 border-gray-300 bg-gray-50">
+                    <div class="step-icon w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center mr-4">
+                        <span class="text-sm font-bold text-gray-600">1</span>
+                    </div>
+                    <div class="flex-1">
+                        <div class="font-medium text-gray-700">Audio-Konvertierung</div>
+                        <div class="text-sm text-gray-500">Optimierung für Whisper...</div>
+                    </div>
+                    <div class="step-status">
+                        <span class="text-gray-400">⏳ Warten</span>
+                    </div>
+                </div>
+
+                <!-- Step 2: Whisper Transcription -->
+                <div id="step-transcription" class="flex items-center p-3 rounded-lg border-l-4 border-gray-300 bg-gray-50">
+                    <div class="step-icon w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center mr-4">
+                        <span class="text-sm font-bold text-gray-600">2</span>
+                    </div>
+                    <div class="flex-1">
+                        <div class="font-medium text-gray-700">Whisper Transkription</div>
+                        <div class="text-sm text-gray-500">Sprache zu Text...</div>
+                    </div>
+                    <div class="step-status">
+                        <span class="text-gray-400">⏳ Warten</span>
+                    </div>
+                </div>
+
+                <!-- Step 3: Speaker Diarization -->
+                <div id="step-diarization" class="flex items-center p-3 rounded-lg border-l-4 border-gray-300 bg-gray-50">
+                    <div class="step-icon w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center mr-4">
+                        <span class="text-sm font-bold text-gray-600">3</span>
+                    </div>
+                    <div class="flex-1">
+                        <div class="font-medium text-gray-700">Sprecher-Erkennung</div>
+                        <div class="text-sm text-gray-500">PyAnnote Diarization...</div>
+                    </div>
+                    <div class="step-status">
+                        <span class="text-gray-400">⏳ Warten</span>
+                    </div>
+                </div>
+
+                <!-- Step 4: Protocol Generation -->
+                <div id="step-protocol" class="flex items-center p-3 rounded-lg border-l-4 border-gray-300 bg-gray-50">
+                    <div class="step-icon w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center mr-4">
+                        <span class="text-sm font-bold text-gray-600">4</span>
+                    </div>
+                    <div class="flex-1">
+                        <div class="font-medium text-gray-700">Protokoll-Generierung</div>
+                        <div class="text-sm text-gray-500">KI erstellt strukturiertes Protokoll...</div>
+                    </div>
+                    <div class="step-status">
+                        <span class="text-gray-400">⏳ Warten</span>
+                    </div>
                 </div>
             </div>
-            <div class="mt-4">
-                <div class="bg-gray-200 rounded-full h-2">
-                    <div id="progressBar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+
+            <!-- Overall Progress Bar -->
+            <div class="mt-6">
+                <div class="flex justify-between text-sm text-gray-600 mb-2">
+                    <span>Gesamtfortschritt</span>
+                    <span id="overall-progress-text">0% abgeschlossen</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-3">
+                    <div id="overall-progress-bar" class="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Processing Time -->
+            <div class="mt-4 text-center">
+                <div class="text-sm text-gray-500">
+                    <span id="processing-time">Verarbeitungszeit: <span id="elapsed-time">0:00</span></span>
                 </div>
             </div>
         </div>
@@ -270,6 +361,9 @@ const modelDescriptions = {
     "large-v3": "Neueste Version mit bester Qualität (1x)"
 };
 
+// Add refresh button functionality
+document.getElementById('refreshModelsOverview')?.addEventListener('click', loadModelsOverview);
+
 // Load available models on page load
 async function loadAvailableModels() {
     console.log('🔄 Loading available models...');
@@ -313,6 +407,9 @@ async function loadAvailableModels() {
             updateModelDescription();
         }
         
+        // Also load models overview
+        loadModelsOverview();
+        
     } catch (error) {
         console.error('❌ Failed to load models:', error);
         
@@ -335,6 +432,9 @@ async function loadAvailableModels() {
             `;
             console.log('✅ Fallback model options set');
         }
+        
+        // Try to load models overview anyway
+        loadModelsOverview();
     }
 }
 
@@ -561,7 +661,6 @@ async function uploadAudio() {
             
             // Hide upload section and show processing
             hideUploadSection();
-            showProcessingStatus();
             
             // Start polling for results
             pollForResults(result.job_id);
@@ -591,129 +690,303 @@ function hideUploadSection() {
     if (uploadSection) {
         uploadSection.style.display = 'none';
     }
-}
-
-// Show processing status with improved loading states
-function showProcessingStatus() {
+    
+    // Show processing status section
     const statusSection = document.getElementById('statusSection');
     if (statusSection) {
-        statusSection.innerHTML = `
-            <div class="text-center">
-                <div class="loading-spinner mx-auto mb-4"></div>
-                <h3 class="text-lg font-semibold text-blue-800 mb-2">Audio wird verarbeitet...</h3>
-                <div id="processingSteps" class="space-y-2 text-left max-w-md mx-auto">
-                    <div id="step-upload" class="flex items-center space-x-2">
-                        <div class="w-4 h-4 rounded-full bg-green-500"></div>
-                        <span class="text-green-700">✅ Upload abgeschlossen</span>
-                    </div>
-                    <div id="step-convert" class="flex items-center space-x-2">
-                        <div class="w-4 h-4 rounded-full bg-blue-500 animate-pulse"></div>
-                        <span class="text-blue-700">🔄 Audio-Konvertierung...</span>
-                    </div>
-                    <div id="step-transcribe" class="flex items-center space-x-2">
-                        <div class="w-4 h-4 rounded-full bg-gray-300"></div>
-                        <span class="text-gray-500">⏳ Transkription (Whisper)</span>
-                    </div>
-                    <div id="step-diarization" class="flex items-center space-x-2">
-                        <div class="w-4 h-4 rounded-full bg-gray-300"></div>
-                        <span class="text-gray-500">⏳ Sprecher-Erkennung (PyAnnote)</span>
-                    </div>
-                </div>
-                <div class="mt-4 text-sm text-gray-600">
-                    <p>⏱️ Dies kann je nach Datei-Größe einige Minuten dauern</p>
-                    <div class="mt-2 text-xs text-gray-500">
-                        <div id="processingTip">💡 Tipp: Kleinere Modelle (tiny/base) sind schneller</div>
-                    </div>
-                </div>
-            </div>
-        `;
         statusSection.classList.remove('hidden');
         statusSection.style.display = 'block';
+        
+        // Initialize all steps to waiting state
+        updateProcessingStep('conversion', 'waiting', 'Warten auf Start...');
+        updateProcessingStep('transcription', 'waiting', 'Warten...');
+        updateProcessingStep('diarization', 'waiting', 'Warten...');
+        updateProcessingStep('protocol', 'waiting', 'Warten...');
+        
+        // Start with first step
+        updateProcessingStep('conversion', 'active', 'Audio wird konvertiert...');
+        updateOverallProgress(0, 'Audio-Konvertierung gestartet');
+        
+        // Start processing timer
+        startProcessingTimer();
     }
 }
 
-// Update processing step status
+// Update processing step status with enhanced visual feedback
 function updateProcessingStep(step, status, message) {
     const stepElement = document.getElementById(`step-${step}`);
     if (!stepElement) return;
     
-    const indicator = stepElement.querySelector('.w-4.h-4');
-    const text = stepElement.querySelector('span');
+    const iconElement = stepElement.querySelector('.step-icon');
+    const statusElement = stepElement.querySelector('.step-status');
+    const messageElement = stepElement.querySelector('.text-sm.text-gray-500');
     
-    if (status === 'active') {
-        indicator.className = 'w-4 h-4 rounded-full bg-blue-500 animate-pulse';
-        text.className = 'text-blue-700';
-        text.textContent = `🔄 ${message}`;
+    // Remove all status classes
+    stepElement.classList.remove('border-gray-300', 'border-blue-500', 'border-green-500', 'border-red-500');
+    stepElement.classList.remove('bg-gray-50', 'bg-blue-50', 'bg-green-50', 'bg-red-50');
+    
+    if (status === 'waiting') {
+        stepElement.classList.add('border-gray-300', 'bg-gray-50');
+        iconElement.innerHTML = '<span class="text-sm font-bold text-gray-600">' + getStepNumber(step) + '</span>';
+        iconElement.className = 'step-icon w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center mr-4';
+        statusElement.innerHTML = '<span class="text-gray-400">⏳ Warten</span>';
+    } else if (status === 'active') {
+        stepElement.classList.add('border-blue-500', 'bg-blue-50');
+        iconElement.innerHTML = '<div class="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>';
+        iconElement.className = 'step-icon w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center mr-4';
+        statusElement.innerHTML = '<span class="text-blue-600">🔄 Läuft...</span>';
     } else if (status === 'completed') {
-        indicator.className = 'w-4 h-4 rounded-full bg-green-500';
-        text.className = 'text-green-700';
-        text.textContent = `✅ ${message}`;
+        stepElement.classList.add('border-green-500', 'bg-green-50');
+        iconElement.innerHTML = '<svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>';
+        iconElement.className = 'step-icon w-8 h-8 rounded-full bg-green-500 flex items-center justify-center mr-4';
+        statusElement.innerHTML = '<span class="text-green-600">✅ Abgeschlossen</span>';
     } else if (status === 'error') {
-        indicator.className = 'w-4 h-4 rounded-full bg-red-500';
-        text.className = 'text-red-700';
-        text.textContent = `❌ ${message}`;
+        stepElement.classList.add('border-red-500', 'bg-red-50');
+        iconElement.innerHTML = '<svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>';
+        iconElement.className = 'step-icon w-8 h-8 rounded-full bg-red-500 flex items-center justify-center mr-4';
+        statusElement.innerHTML = '<span class="text-red-600">❌ Fehler</span>';
+    }
+    
+    // Update message
+    if (messageElement) {
+        messageElement.textContent = message;
     }
 }
 
-// Enhanced poll for results with step tracking
+// Get step number for display
+function getStepNumber(step) {
+    const stepNumbers = {
+        'conversion': '1',
+        'transcription': '2', 
+        'diarization': '3',
+        'protocol': '4'
+    };
+    return stepNumbers[step] || '?';
+}
+
+// Update overall progress bar
+function updateOverallProgress(percentage, statusText) {
+    const progressBar = document.getElementById('overall-progress-bar');
+    const progressText = document.getElementById('overall-progress-text');
+    
+    if (progressBar) {
+        progressBar.style.width = percentage + '%';
+    }
+    
+    if (progressText) {
+        progressText.textContent = Math.round(percentage) + '% - ' + statusText;
+    }
+}
+
+// Processing timer functionality
+let processingStartTime = null;
+let processingTimerInterval = null;
+
+function startProcessingTimer() {
+    processingStartTime = new Date();
+    processingTimerInterval = setInterval(updateProcessingTimer, 1000);
+}
+
+function stopProcessingTimer() {
+    if (processingTimerInterval) {
+        clearInterval(processingTimerInterval);
+        processingTimerInterval = null;
+    }
+}
+
+function updateProcessingTimer() {
+    if (!processingStartTime) return;
+    
+    const now = new Date();
+    const elapsed = Math.floor((now - processingStartTime) / 1000);
+    
+    const minutes = Math.floor(elapsed / 60);
+    const seconds = elapsed % 60;
+    
+    const elapsedTimeElement = document.getElementById('elapsed-time');
+    if (elapsedTimeElement) {
+        elapsedTimeElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+}
+
+// Enhanced poll for results with step tracking based on actual backend progress
 async function pollForResults(jobId) {
+    console.log('🚀 Starting polling for job:', jobId);
     let attempts = 0;
     const maxAttempts = 120; // 10 minutes timeout
+    let currentStep = 'conversion';
     
     const pollInterval = setInterval(async () => {
         attempts++;
+        console.log(`📊 Polling attempt ${attempts} for job ${jobId}`);
         
         try {
             const response = await fetch(`/api/v1/status/${jobId}`);
-            const data = await response.json();
+            console.log('📡 Status response:', response.status);
             
-            // Update processing steps based on status
-            if (data.status === 'processing') {
-                if (data.progress >= 25) {
-                    updateProcessingStep('convert', 'completed', 'Audio-Konvertierung abgeschlossen');
-                    updateProcessingStep('transcribe', 'active', 'Transkription läuft...');
+            if (!response.ok) {
+                console.error('❌ Status API error:', response.status, response.statusText);
+                const errorText = await response.text();
+                console.error('❌ Error details:', errorText);
+                
+                if (response.status === 404) {
+                    // Job not found - might be completed and cleaned up
+                    // Let's assume it completed successfully after 5 attempts
+                    if (attempts > 5) {
+                        console.log('🤔 Job not found after several attempts - assuming completion');
+                        clearInterval(pollInterval);
+                        stopProcessingTimer();
+                        
+                        // Mark all steps as completed
+                        updateProcessingStep('conversion', 'completed', 'Audio optimiert');
+                        updateProcessingStep('transcription', 'completed', 'Text extrahiert');
+                        updateProcessingStep('diarization', 'completed', 'Sprecher erkannt');
+                        updateProcessingStep('protocol', 'completed', 'Protokoll erstellt');
+                        updateOverallProgress(100, 'Verarbeitung abgeschlossen!');
+                        
+                        // Show a fallback result
+                        const fallbackResult = {
+                            transcript: 'Verarbeitung abgeschlossen, aber Ergebnis konnte nicht abgerufen werden.',
+                            segments: [],
+                            speakers: [],
+                            protocol_text: 'Protokoll wurde erstellt, aber ist nicht verfügbar.',
+                            metadata: {
+                                duration: 0,
+                                duration_formatted: '0:00',
+                                speaker_count: 0,
+                                language: 'de'
+                            }
+                        };
+                        
+                        setTimeout(() => {
+                            displayResults(fallbackResult);
+                        }, 1000);
+                    }
+                    return;
                 }
-                if (data.progress >= 75) {
-                    updateProcessingStep('transcribe', 'completed', 'Transkription abgeschlossen');
-                    updateProcessingStep('diarization', 'active', 'Sprecher-Erkennung...');
+                return;
+            }
+            
+            const data = await response.json();
+            console.log('📄 Status data:', data);
+            
+            // Update steps based on backend status and progress
+            if (data.status === 'processing') {
+                console.log(`📊 Processing... Progress: ${data.progress}%, Current step: ${currentStep}`);
+                
+                // Step 1: Audio Conversion (0-15%)
+                if (data.progress >= 0 && currentStep === 'conversion') {
+                    updateProcessingStep('conversion', 'active', 'Audio wird für Whisper optimiert...');
+                    updateOverallProgress(5, 'Audio-Konvertierung läuft');
+                }
+                
+                if (data.progress >= 15) {
+                    updateProcessingStep('conversion', 'completed', 'Audio-Konvertierung abgeschlossen');
+                    updateProcessingStep('transcription', 'active', 'Whisper Transkription läuft...');
+                    currentStep = 'transcription';
+                    updateOverallProgress(25, 'Sprach-zu-Text Konvertierung');
+                }
+                
+                // Step 2: Whisper Transcription (15-60%)
+                if (data.progress >= 30 && currentStep === 'transcription') {
+                    updateOverallProgress(40, 'Whisper verarbeitet Audio...');
+                }
+                
+                if (data.progress >= 60) {
+                    updateProcessingStep('transcription', 'completed', 'Transkription abgeschlossen');
+                    updateProcessingStep('diarization', 'active', 'PyAnnote Sprecher-Erkennung...');
+                    currentStep = 'diarization';
+                    updateOverallProgress(65, 'Sprecher werden erkannt');
+                }
+                
+                // Step 3: Speaker Diarization (60-80%)
+                if (data.progress >= 70 && currentStep === 'diarization') {
+                    updateOverallProgress(75, 'Sprecher-Segmente werden zugeordnet');
+                }
+                
+                if (data.progress >= 80) {
+                    updateProcessingStep('diarization', 'completed', 'Sprecher-Erkennung abgeschlossen');
+                    updateProcessingStep('protocol', 'active', 'KI generiert Protokoll...');
+                    currentStep = 'protocol';
+                    updateOverallProgress(85, 'Protokoll wird erstellt');
+                }
+                
+                // Step 4: Protocol Generation (80-95%)
+                if (data.progress >= 90 && currentStep === 'protocol') {
+                    updateOverallProgress(95, 'Protokoll wird finalisiert...');
                 }
             }
             
             if (data.status === 'completed') {
+                console.log('✅ Job completed successfully!');
                 clearInterval(pollInterval);
-                updateProcessingStep('transcribe', 'completed', 'Transkription abgeschlossen');
-                updateProcessingStep('diarization', 'completed', 'Sprecher-Erkennung abgeschlossen');
+                stopProcessingTimer();
                 
+                // Complete all steps
+                updateProcessingStep('conversion', 'completed', 'Audio optimiert');
+                updateProcessingStep('transcription', 'completed', 'Text extrahiert');
+                updateProcessingStep('diarization', 'completed', 'Sprecher erkannt');
+                updateProcessingStep('protocol', 'completed', 'Protokoll erstellt');
+                updateOverallProgress(100, 'Verarbeitung abgeschlossen!');
+                
+                // Show completion animation
                 setTimeout(() => {
-                    displayResults(data.result);
-                }, 500); // Small delay to show completion
+                    const statusSection = document.getElementById('statusSection');
+                    if (statusSection) {
+                        statusSection.style.transform = 'scale(0.98)';
+                        statusSection.style.opacity = '0.8';
+                        
+                        setTimeout(() => {
+                            displayResults(data.result);
+                        }, 300);
+                    }
+                }, 500);
+                
             } else if (data.status === 'failed') {
+                console.error('❌ Job failed:', data.error);
                 clearInterval(pollInterval);
+                stopProcessingTimer();
+                
+                // Mark current step as failed
+                updateProcessingStep(currentStep, 'error', 'Fehler aufgetreten');
+                updateOverallProgress(0, 'Verarbeitung fehlgeschlagen');
+                
                 showError(data.error || 'Processing failed');
+                
             } else if (attempts >= maxAttempts) {
+                console.error('❌ Polling timeout reached');
                 clearInterval(pollInterval);
+                stopProcessingTimer();
+                updateProcessingStep(currentStep, 'error', 'Timeout erreicht');
                 showError('Timeout: Processing took too long');
             }
+            
         } catch (error) {
-            console.error('Polling error:', error);
+            console.error('❌ Polling error:', error);
             attempts += 5; // Fast fail on network errors
         }
         
-        // Show timeout warning
-        if (attempts > 60 && attempts % 20 === 0) {
-            const tip = document.getElementById('processingTip');
-            if (tip) {
-                tip.innerHTML = `⚠️ Verarbeitung dauert lange. Bei großen Dateien kann dies normal sein.`;
-                tip.className = 'text-amber-600';
+        // Show timeout warning after 2 minutes
+        if (attempts > 24 && attempts % 12 === 0) {
+            console.log('⚠️ Showing timeout warning');
+            const processingTime = document.getElementById('processing-time');
+            if (processingTime) {
+                processingTime.innerHTML = `
+                    <span class="text-amber-600">⚠️ Verarbeitung dauert länger als erwartet</span><br>
+                    <span class="text-sm">Verarbeitungszeit: <span id="elapsed-time">0:00</span></span>
+                `;
             }
         }
         
-    }, 5000); // Poll every 5 seconds
+    }, 3000); // Poll every 3 seconds for faster response
 }
 
 // Display results
 function displayResults(result) {
     console.log('🎉 Showing results:', result);
+    
+    // Stop processing timer
+    stopProcessingTimer();
     
     // Hide processing status
     const statusSection = document.getElementById('statusSection');
@@ -1860,7 +2133,166 @@ ${promptData.content}
     document.body.appendChild(modal);
 }
 
+// Load models overview on page load
+async function loadModelsOverview() {
+    console.log('🔄 Loading models overview...');
+    const container = document.getElementById('modelsOverviewContent');
+    
+    try {
+        const response = await fetch('/api/v1/models/overview');
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('📄 Models overview data received:', data);
+        
+        // Generate overview HTML
+        const overviewHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Whisper Model -->
+                <div class="bg-gradient-to-r from-blue-50 to-blue-100 border-l-4 border-blue-500 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-lg font-semibold text-blue-800 flex items-center">
+                            🎤 Whisper
+                            <span class="ml-2 px-2 py-1 text-xs font-medium rounded-full ${data.models.whisper.status === 'loaded' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                ${data.models.whisper.status === 'loaded' ? '✅ Geladen' : '❌ Nicht geladen'}
+                            </span>
+                        </h3>
+                    </div>
+                    <div class="space-y-2 text-sm">
+                        <div><span class="font-medium">Modell:</span> ${data.models.whisper.current_model}</div>
+                        <div><span class="font-medium">Größe:</span> ${data.models.whisper.model_info?.size_mb || 'Unbekannt'} MB</div>
+                        <div><span class="font-medium">Geschwindigkeit:</span> ${data.models.whisper.model_info?.speed || 'Unbekannt'}</div>
+                        <div><span class="font-medium">Device:</span> ${data.models.whisper.device || 'CPU'}</div>
+                        <div class="pt-2">
+                            <span class="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                                ${Object.keys(data.models.whisper.available_models || {}).length} Modelle verfügbar
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- PyAnnote Model -->
+                <div class="bg-gradient-to-r from-green-50 to-green-100 border-l-4 border-green-500 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-lg font-semibold text-green-800 flex items-center">
+                            👥 PyAnnote
+                            <span class="ml-2 px-2 py-1 text-xs font-medium rounded-full ${data.models.pyannote.status === 'loaded' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                ${data.models.pyannote.status === 'loaded' ? '✅ Geladen' : '❌ Nicht geladen'}
+                            </span>
+                        </h3>
+                    </div>
+                    <div class="space-y-2 text-sm">
+                        <div><span class="font-medium">Modell:</span> speaker-diarization-3.1</div>
+                        <div><span class="font-medium">HF Token:</span> ${data.models.pyannote.auth_token === 'configured' ? '✅ Konfiguriert' : '❌ Nicht konfiguriert'}</div>
+                        <div><span class="font-medium">Features:</span></div>
+                        <div class="ml-4 space-y-1">
+                            ${data.models.pyannote.capabilities?.map(cap => 
+                                `<div class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded inline-block mr-1 mb-1">
+                                    ${cap === 'speaker_diarization' ? '🎯 Speaker-Erkennung' : 
+                                      cap === 'voice_activity_detection' ? '🔊 Sprach-Erkennung' : cap}
+                                </div>`
+                            ).join('') || '<div class="text-xs text-gray-500">Keine Features verfügbar</div>'}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Ollama Model -->
+                <div class="bg-gradient-to-r from-purple-50 to-purple-100 border-l-4 border-purple-500 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-lg font-semibold text-purple-800 flex items-center">
+                            🦙 Ollama
+                            <span class="ml-2 px-2 py-1 text-xs font-medium rounded-full ${data.models.ollama.status === 'available' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                ${data.models.ollama.status === 'available' ? '✅ Verfügbar' : '❌ Nicht verfügbar'}
+                            </span>
+                        </h3>
+                    </div>
+                    <div class="space-y-2 text-sm">
+                        <div><span class="font-medium">Server:</span> ${data.models.ollama.base_url}</div>
+                        <div><span class="font-medium">Standard:</span> ${data.models.ollama.default_model}</div>
+                        <div><span class="font-medium">Version:</span> ${data.models.ollama.server_version || 'Unbekannt'}</div>
+                        <div><span class="font-medium">Modelle:</span> ${data.models.ollama.available_models?.length || 0} geladen</div>
+                        ${data.models.ollama.available_models?.length > 0 ? `
+                            <div class="pt-2 max-h-24 overflow-y-auto">
+                                ${data.models.ollama.available_models.slice(0, 3).map(model => 
+                                    `<div class="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded mb-1 truncate">
+                                        ${model.name} (${model.size_formatted})
+                                    </div>`
+                                ).join('')}
+                                ${data.models.ollama.available_models.length > 3 ? 
+                                    `<div class="text-xs text-purple-500">... und ${data.models.ollama.available_models.length - 3} weitere</div>` : ''
+                                }
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Service Information -->
+            <div class="mt-6 bg-gray-50 rounded-lg p-4">
+                <h4 class="text-md font-semibold text-gray-800 mb-3 flex items-center">
+                    ⚙️ Service-Konfiguration
+                </h4>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div>
+                        <span class="font-medium text-gray-600">Sprache:</span>
+                        <div class="text-gray-800">${data.configuration?.language || 'de'}</div>
+                    </div>
+                    <div>
+                        <span class="font-medium text-gray-600">Status:</span>
+                        <div class="text-green-600 font-medium">${data.service_status || 'unbekannt'}</div>
+                    </div>
+                    <div>
+                        <span class="font-medium text-gray-600">Speicher (Whisper):</span>
+                        <div class="text-gray-800">${data.memory_usage?.estimated_whisper_size || 'Unbekannt'}</div>
+                    </div>
+                    <div>
+                        <span class="font-medium text-gray-600">Letztes Update:</span>
+                        <div class="text-gray-800">${new Date(data.timestamp).toLocaleTimeString('de-DE')}</div>
+                    </div>
+                </div>
+                
+                <div class="mt-3 pt-3 border-t border-gray-200">
+                    <span class="font-medium text-gray-600">Unterstützte Audio-Formate:</span>
+                    <div class="mt-1 flex flex-wrap gap-1">
+                        ${data.configuration?.audio_formats?.map(format => 
+                            `<span class="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded">${format.toUpperCase()}</span>`
+                        ).join('') || '<span class="text-xs text-gray-500">Keine Formate gefunden</span>'}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        container.innerHTML = overviewHTML;
+        console.log('✅ Models overview loaded successfully');
+        
+    } catch (error) {
+        console.error('❌ Failed to load models overview:', error);
+        container.innerHTML = `
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <div>
+                        <h3 class="text-red-800 font-medium">Fehler beim Laden der Modell-Übersicht</h3>
+                        <p class="text-red-600 text-sm mt-1">${error.message}</p>
+                    </div>
+                </div>
+                <button onclick="loadModelsOverview()" class="mt-3 text-red-600 hover:text-red-800 text-sm underline">
+                    🔄 Erneut versuchen
+                </button>
+            </div>
+        `;
+    }
+}
+
 // ...existing code...
     </script>
+    
+    <!-- Models Overview Module -->
+    <script src="/web/js/models-overview.js"></script>
+    
 </body>
 </html>

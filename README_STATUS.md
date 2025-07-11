@@ -1,10 +1,10 @@
-# A2T-DreamMall Audio-zu-Text Meeting Protocol Generator
+# A2T-DreamMall Audio-zu-Text Service - Aktueller Status
 
 ## 🎯 Überblick
 
-Der A2T-DreamMall Service ist eine vollständig funktionsfähige Audio-zu-Text Pipeline, die Audiodateien von Meetings automatisch in strukturierte Protokolle umwandelt. Das System kombiniert modernste KI-Technologien für Transkription, Speaker Diarization und intelligente Protokoll-Generierung.
+Der A2T-DreamMall Service ist eine Audio-zu-Text Pipeline, die Audiodateien von Meetings transkribiert und mit visueller Fortschrittsverfolgung verarbeitet. Das System kombiniert modernste KI-Technologien für Transkription und Speaker Diarization.
 
-## ✅ Vollständig implementierte Features
+## ✅ Vollständig implementierte und getestete Features
 
 ### 🎵 Audio-Processing
 - **Whisper AI** für hochqualitative deutsche Sprachtranskription
@@ -12,28 +12,41 @@ Der A2T-DreamMall Service ist eine vollständig funktionsfähige Audio-zu-Text P
 - **Robuste Fehlerbehandlung** mit Fallback-Mechanismen
 - **Zeitstempel-Segmente** für präzise Transkript-Navigation
 
-### 🗣️ Speaker Diarization (Optional)
+### 🗣️ Speaker Diarization
 - **PyAnnote.Audio** für automatische Sprecher-Erkennung
 - **HuggingFace Integration** mit Token-basierter Authentifizierung
 - **Graceful Fallback** wenn Speaker Diarization nicht verfügbar
 - **Speaker-Farbcodierung** im Web-Interface
 
-### 🤖 Intelligente Protokoll-Generierung
-- **Ollama LLM Integration** für strukturierte Meeting-Protokolle
-- **Deutsche Sprachoptimierung** für Business-Kontext
-- **Automatische Extraktion** von Agenda-Punkten, Entscheidungen, Action Items
-- **On-Demand-Generierung** per Klick (nicht automatisch)
+### 🎛️ Visueller Fortschritt
+- **4-Schritt-Anzeige**: Audio-Konvertierung → Whisper → PyAnnote → Protokoll
+- **Echtzeit-Updates**: Live-Status der Verarbeitungsschritte
+- **Timer-Funktionen**: Anzeige der Verarbeitungszeit
+- **Robuste Polling-Mechanismen**: Fehlerbehandlung bei Frontend-Backend-Kommunikation
 
 ### 🌐 Moderne Web-Interface & API
-- **🎨 Völlig neue Web-UI** mit modernem Design und UX
+- **🎨 Professionelles Design** mit Tailwind CSS und UX
 - **📊 Dashboard-Übersicht** mit Dauer, Speaker-Anzahl, Sprache
 - **📝 Transkript-Anzeige** mit Zeitstempeln und Speaker-Farbcodierung
 - **🎛️ Interactive Features** (Zeitstempel ein/ausblenden, Speaker-Legend)
-- **🤖 KI-Protokoll-Button** für On-Demand-Protokoll-Generierung
-- **📄 Download-Funktion** für Protokolle als Text-Datei
 - **📡 REST API** für programmatische Integration
 - **⏱️ Echtzeit-Status-Updates** mit Progress Bar und Loading-Animations
 - **⚡ Asynchrone Job-Verarbeitung** mit Background-Tasks
+
+## ⚠️ Teilweise implementierte Features
+
+### 🤖 Protokoll-Generierung
+- **Ollama LLM Integration** implementiert, aber Frontend zeigt "none"
+- **Backend-API** für Protokoll-Generierung funktional
+- **Fallback-Protokolle** werden derzeit angezeigt
+- **Prompt-Export** für externe LLM-Tools verfügbar
+
+## ❌ Noch nicht funktionale Features
+
+### 📄 Download-Funktionen
+- **Download-Buttons** vorhanden, aber Download funktioniert nicht
+- **Text-Export** für Transkripte noch nicht umgesetzt
+- **Protocol-Download** als .txt-Datei nicht funktional
 
 ## 🛠️ Technologie-Stack
 
@@ -45,16 +58,32 @@ Der A2T-DreamMall Service ist eine vollständig funktionsfähige Audio-zu-Text P
 └── Integration: DreamMall Backend/Frontend Ready
 ```
 
-## 📋 Erfolgreiche Tests
+## 📋 Tatsächlich getestete Funktionen
 
 ✅ **Audio-Upload**: Multi-Format-Unterstützung (MP3, WAV, M4A, MP4, WebM)  
 ✅ **Deutsche Transkription**: Business-Meeting perfekt transkribiert  
 ✅ **Zeitstempel-Segmente**: Präzise Navigation durch Gespräch  
 ✅ **Speaker-Erkennung**: Automatische Sprecher-Identifikation  
-✅ **Protokoll-Generierung**: Strukturierte Ausgabe mit Action Items  
 ✅ **Moderne Web-Interface**: Benutzerfreundliche, responsive Bedienung  
 ✅ **API-Endpunkte**: Vollständig funktional mit erweiterten Datenstrukturen  
 ✅ **Fehlerbehandlung**: Robuste Error-Recovery mit Fallback-Mechanismen  
+✅ **4-Schritt-Fortschritt**: Visuelle Anzeige mit Timer und Status-Updates
+
+⚠️ **Protokoll-Generierung**: Backend implementiert, Frontend zeigt aber Fallback-Protokolle  
+⚠️ **Ollama-Integration**: API vorhanden, aber Modell-Auswahl zeigt "none"  
+❌ **Download-Funktionen**: Buttons vorhanden, aber nicht funktional  
+
+## 🚧 Bekannte Probleme
+
+### Frontend-Backend-Synchronisation
+- Jobs werden nach Completion aus dem Backend entfernt
+- Frontend-Polling benötigt robustere 404-Behandlung
+- Modell-Auswahl-Interface zeigt keine echten Ollama-Modelle
+
+### Download-Implementierung
+- `downloadProtocolAsFile()` Funktion vorhanden, aber nicht vollständig implementiert
+- Text-Export für Transkripte fehlt
+- File-Download-Mechanismus nicht getestet  
 
 ## 🚀 Quick Start
 

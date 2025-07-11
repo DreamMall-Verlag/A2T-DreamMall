@@ -20,6 +20,9 @@ class WhisperClient:
     def __init__(self, model_size: str = "small"):
         self.current_model_size = model_size
         self.model = None
+        self.device = "cpu"  # Will be updated based on actual device
+        self.version = "unknown"
+        self.model_path = "unknown"
         self.load_model(model_size)
         
     def load_model(self, model_size: str):
@@ -32,6 +35,17 @@ class WhisperClient:
             
             self.model = whisper.load_model(model_size)
             self.current_model_size = model_size
+            
+            # Update device information
+            import torch
+            self.device = str(self.model.device) if hasattr(self.model, 'device') else "cpu"
+            
+            # Try to get Whisper version
+            try:
+                self.version = getattr(whisper, '__version__', 'unknown')
+            except:
+                self.version = 'unknown'
+            
             model_info = self.AVAILABLE_MODELS[model_size]
             print(f"✅ Whisper model '{model_size}' loaded successfully")
             print(f"📊 Model size: {model_info['size']}, Speed: {model_info['relative_speed']}")
@@ -47,9 +61,10 @@ class WhisperClient:
         """Get current model information"""
         model_info = self.AVAILABLE_MODELS.get(self.current_model_size, {})
         return {
-            "current_model": self.current_model_size,
-            "model_info": model_info,
-            "available_models": self.AVAILABLE_MODELS
+            "size_mb": int(model_info.get("size", "0").split()[0]) if "MB" in model_info.get("size", "") else 0,
+            "speed": model_info.get("relative_speed", "unknown"),
+            "description": model_info.get("description", "No description"),
+            "model_name": self.current_model_size
         }
         
     def transcribe_with_timestamps(self, audio_path: str, language: str = "de", model_override: str = None) -> Dict:

@@ -2,12 +2,12 @@
 
 ## 🎯 Überblick
 
-**A2T-DreamMall** ist ein vollständig funktionsfähiger, lokaler Audio-zu-Text Service, der Audiodateien von Meetings automatisch in strukturierte Protokolle umwandelt. Das System kombiniert modernste KI-Technologien für Transkription, Speaker Diarization und intelligente Protokoll-Generierung.
+**A2T-DreamMall** ist ein lokaler Audio-zu-Text Service, der Audiodateien von Meetings transkribiert und mit visueller Fortschrittsanzeige verarbeitet. Das System kombiniert modernste KI-Technologien für Transkription und Speaker Diarization.
 
 ### ✨ Hauptmerkmale
 - **🎵 Audio-Processing**: Whisper AI für hochqualitative deutsche Sprachtranskription
 - **🗣️ Speaker Diarization**: Automatische Sprecher-Erkennung mit PyAnnote.Audio
-- **🤖 KI-Protokoll-Generierung**: Strukturierte Meeting-Protokolle via Ollama LLM
+- **🎛️ Visuelle Fortschrittsverfolgung**: 4-Schritt-Anzeige für Benutzer-Feedback
 - **🌐 Moderne Web-UI**: Professionelle, responsive Benutzeroberfläche
 - **📡 REST API**: Vollständige Integration in externe Systeme
 - **🔒 100% Lokal**: Keine Cloud-Abhängigkeiten, vollständiger Datenschutz
@@ -16,17 +16,17 @@
 1. **Audio-Preprocessing**: FFmpeg + Librosa für robuste Audio-Verarbeitung
 2. **Speaker Diarization**: Automatische Sprecher-Erkennung und -Trennung
 3. **Speech-to-Text**: Präzise Transkription mit Zeitstempeln
-4. **Protocol Generation**: Intelligente Strukturierung zu Meeting-Protokollen
+4. **Visual Progress Tracking**: Echtzeit-Updates für Verarbeitungsschritte
 5. **Lokale Verarbeitung**: 100% offline, keine Cloud-Abhängigkeiten
 
 ---
 
-## 🚀 Status: VOLLSTÄNDIG FUNKTIONSFÄHIG
+## 🚀 Status: FUNKTIONSFÄHIG MIT EINSCHRÄNKUNGEN
 
 **Current Version:** 1.0.0  
-**Status:** ✅ Production Ready
+**Status:** ⚠️ Kern-Features funktional, Protokoll-Generierung in Entwicklung
 
-### ✅ Erfolgreich implementierte Features
+### ✅ Vollständig implementierte Features
 
 #### 🎵 Audio-Processing
 - **Whisper AI** mit deutschen Sprachmodellen
@@ -40,28 +40,36 @@
 - **Graceful Fallback** wenn Speaker Diarization nicht verfügbar
 - **Speaker-Farbcodierung** mit bis zu 6 verschiedenen Farben
 
-#### 🤖 Intelligente Protokoll-Generierung
-- **Ollama LLM Integration** für lokale KI-Verarbeitung
-- **Strukturiertes 9-Punkte-Schema** für professionelle Meeting-Protokolle
-- **Deutsche Sprachoptimierung** für Business-Kontext
-- **Automatische Extraktion** von Agenda-Punkten, Entscheidungen, Action Items
-- **On-Demand-Generierung** per Klick (nicht automatisch)
-- **JSON-Prompt-Export** für externe LLM-Tools (ChatGPT, Claude, etc.)
+#### 🎛️ Visueller Fortschritt
+- **4-Schritt-Anzeige**: Audio-Konvertierung → Whisper → PyAnnote → Protokoll
+- **Echtzeit-Updates**: Live-Status der Verarbeitungsschritte
+- **Fortschrittsbalken**: Visuelle Rückmeldung für Benutzer
+- **Timer-Funktionen**: Anzeige der Verarbeitungszeit
 
 #### 🌐 Moderne Web-Interface
 - **🎨 Professionelles Design** mit Tailwind CSS
 - **📊 Dashboard-Übersicht**: Dauer, Speaker-Anzahl, erkannte Sprache
-- **� Transkript-Anzeige** mit Zeitstempeln und Speaker-Farbcodierung
+- **📝 Transkript-Anzeige** mit Zeitstempeln und Speaker-Farbcodierung
 - **🎛️ Interactive Features**: Zeitstempel ein/ausblenden, Speaker-Legend
-- **🤖 KI-Protokoll-Button** für On-Demand-Protokoll-Generierung
-- **📄 Download-Funktion** für Protokolle als Text-Datei
 - **⏱️ Echtzeit-Status-Updates** mit Progress Bar und Loading-Animations
 
-#### � REST API
+#### 📡 REST API
 - **Asynchrone Job-Verarbeitung** mit Background-Tasks
 - **Vollständige API-Endpunkte** für externe Integration
-- **Real-time Status-Monitoring** über WebSocket-ähnliche Polling
+- **Real-time Status-Monitoring** über Polling
 - **Erweiterte Datenstrukturen** mit Segmenten und Metadaten
+
+### ⚠️ In Entwicklung befindliche Features
+
+#### 🤖 Protokoll-Generierung
+- **Ollama-Integration** implementiert, aber noch nicht voll funktional
+- **Modell-Auswahl-Interface** vorhanden, zeigt aber "none"
+- **Fallback-Protokolle** werden derzeit angezeigt
+- **Prompt-Export** für externe LLM-Tools funktioniert
+
+#### 📄 Download-Funktionen
+- **Download-Button** für Protokolle implementiert, aber nicht funktional
+- **Text-Export** noch nicht vollständig umgesetzt
 
 ---
 
@@ -69,7 +77,7 @@
 
 ```
 ├── Backend: Flask + Python 3.10.x (KRITISCH für PyAnnote!)
-├── AI/ML: Whisper, PyAnnote, Ollama, Librosa
+├── AI/ML: Whisper, PyAnnote, Ollama (in Entwicklung), Librosa
 ├── Audio: FFmpeg, Librosa, PyDub
 ├── Frontend: HTML5, JavaScript, Tailwind CSS
 └── Integration: DreamMall Backend/Frontend Ready
@@ -82,7 +90,7 @@
 
 ### Pipeline-Übersicht
 ```
-Audio Input → Audio Optimization → Speaker Diarization → Whisper Transcription → Ollama Protocol Generation → Structured Output
+Audio Input → Audio Optimization → Speaker Diarization → Whisper Transcription → [Protocol Generation in Entwicklung] → Structured Output
 ```
 
 ---
@@ -91,7 +99,30 @@ Audio Input → Audio Optimization → Speaker Diarization → Whisper Transcrip
 
 ### ⚠️ WICHTIG: Python 3.10.x Setup erforderlich!
 
-#### Empfohlene Installation mit pyenv-win
+#### Option 1: Automatische Installation (Empfohlen)
+
+**Windows:**
+```powershell
+# Repository klonen
+git clone https://github.com/DreamMall-Verlag/A2T-DreamMall.git
+cd A2T-DreamMall
+
+# Automatische Installation
+.\install.ps1
+```
+
+**Linux/Mac:**
+```bash
+# Repository klonen
+git clone https://github.com/DreamMall-Verlag/A2T-DreamMall.git
+cd A2T-DreamMall
+
+# Automatische Installation
+chmod +x install.sh
+./install.sh
+```
+
+#### Option 2: Manuelle Installation mit pyenv-win
 ```powershell
 # 1. pyenv-win installieren (falls noch nicht vorhanden)
 git clone https://github.com/pyenv-win/pyenv-win.git $env:USERPROFILE\.pyenv
@@ -105,10 +136,11 @@ pyenv install 3.10.11
 pyenv local 3.10.11
 
 # 4. Dependencies installieren
-pip install -r requirements.txt
+pip install -r requirements-pytorch.txt  # PyTorch zuerst installieren
+pip install -r requirements.txt          # Dann alle anderen Dependencies
 ```
 
-### Alternative: Direkter Python 3.10 Download
+#### Option 3: Direkter Python 3.10 Download
 ```bash
 # 1. Python 3.10.11 von python.org herunterladen
 # https://www.python.org/downloads/release/python-31011/
@@ -119,17 +151,26 @@ venv\Scripts\activate  # Windows
 source venv/bin/activate  # Linux/Mac
 
 # 3. Dependencies installieren
-pip install -r requirements.txt
+pip install -r requirements-pytorch.txt  # PyTorch zuerst installieren
+pip install -r requirements.txt          # Dann alle anderen Dependencies
 ```
 
 ### 2. Konfiguration
 ```bash
 # .env Datei erstellen
-cp .env.example .env
+cp .env.example .env  # Linux/Mac
+copy .env.example .env  # Windows
 
 # Optional: HuggingFace Token für Speaker Diarization hinzufügen
-# HUGGINGFACE_TOKEN=your_token_here
+# 1. Besuchen Sie: https://hf.co/pyannote/speaker-diarization
+# 2. Token erstellen: https://hf.co/settings/tokens  
+# 3. In .env Datei eintragen: HUGGINGFACE_TOKEN=your_token_here
 ```
+
+**⚠️ WICHTIG für Speaker Diarization:**
+- Ohne HuggingFace Token funktioniert nur Single-Speaker-Fallback
+- Mit Token erhalten Sie automatische Sprecher-Erkennung
+- Nur für kommerzielle Nutzung erforderlich
 
 ### 3. Server starten
 ```bash
@@ -170,86 +211,67 @@ curl http://localhost:5000/api/v1/status/{job_id}
 - **Speaker-Legend**: Übersicht aller identifizierten Sprecher
 - **Scrollbare Segmente**: Übersichtliche Darstellung langer Gespräche
 
-### 🤖 KI-Protokoll-Generierung
-- **On-Demand**: Protokoll wird erst nach Klick generiert
-- **Strukturiertes 9-Punkte-Schema**: Professionelle Meeting-Protokolle nach Branchen-Standard
-- **Modell-Auswahl**: Unterstützt verschiedene Ollama-LLM-Modelle
-- **JSON-Prompt-Export**: Strukturierte Prompts für externe LLM-Tools
-- **Loading-Animation**: Visuelles Feedback während Generierung
-- **Download-Funktion**: Protokoll als .txt-Datei herunterladen
-- **Strukturierte Ausgabe**: Anwesende, Terminabsprachen, Vereinbarungen, Action Items
+### 🎛️ Fortschritts-Tracking
+- **4-Schritt-Anzeige**: Visuelle Darstellung der Verarbeitungsschritte
+  1. 🔄 Audio-Konvertierung
+  2. 🎤 Whisper Transkription
+  3. 🗣️ PyAnnote Speaker Diarization  
+  4. 🤖 Protokoll-Generierung (in Entwicklung)
+- **Echtzeit-Updates**: Live-Status mit animierten Icons
+- **Timer-Funktion**: Anzeige der Verarbeitungszeit
+- **Fehlerbehandlung**: Robuste Polling-Mechanismen
+
+### ⚠️ Noch nicht funktionale Features
+- **Protokoll-Download**: Button vorhanden, aber Download funktioniert noch nicht
+- **Ollama-Modell-Auswahl**: Interface zeigt "none" statt verfügbare Modelle
+- **KI-Protokoll-Generierung**: Fallback-Protokolle werden angezeigt
 
 ---
 
-## 🎯 Neue Features: Strukturierte 9-Punkte-Protokolle
+## 🚧 Offene Punkte und TODO
 
-### ✨ Professionelle Meeting-Protokolle
+### 🤖 Protokoll-Generierung
+- [ ] **Ollama-Verbindung debuggen**: Modell-Auswahl zeigt derzeit "none"
+- [ ] **Protocol Generation API** vollständig testen und debuggen
+- [ ] **Download-Funktion** für generierte Protokolle implementieren
+- [ ] **Fehlerbehandlung** bei Ollama-Ausfall verbessern
 
-Das A2T-DreamMall System generiert jetzt strukturierte Meeting-Protokolle nach einem bewährten 9-Punkte-Schema:
+### 📄 Export-Funktionen  
+- [ ] **Text-Download** für Transkripte implementieren
+- [ ] **Protocol-Download** als .txt oder .pdf ermöglichen
+- [ ] **JSON-Export** für strukturierte Daten
 
-1. **Anwesende** - Teilnehmer mit ihren Namen
-2. **Thema des Gesprächs** - Hauptthema und Zweck des Meetings
-3. **Terminabsprachen** - Alle erwähnten Termine und Deadlines
-4. **Vereinbarungen** - Getroffene Beschlüsse und Entscheidungen
-5. **Übereinkünfte** - Zusätzliche Absprachen zwischen Teilnehmern
-6. **Besprochene Probleme** - Identifizierte Herausforderungen
-7. **Offene Punkte für das nächste Gespräch** - Vertagte Themen
-8. **Nächster Termin zum Treffen** - Geplante Folgetermine
-9. **Aufgaben** - Konkrete Aufgaben mit Verantwortlichen
+### 🔧 Verbesserungen
+- [ ] **Backend-Job-Persistenz** verbessern (Jobs verschwinden nach Completion)
+- [ ] **Frontend-Polling** robuster machen bei längeren Verarbeitungszeiten
+- [ ] **Error-Recovery** für unterbrochene Verbindungen
 
-### 🔧 Flexible Nutzung
+### 🧪 Testing
+- [ ] **End-to-End-Tests** für komplette Pipeline
+- [ ] **Ollama-Integration-Tests** mit verschiedenen Modellen
+- [ ] **Download-Funktionen** testen
 
-#### **Lokale Ollama-Integration**
-- Vollautomatische Protokoll-Generierung mit verschiedenen LLM-Modellen
-- Modell-Auswahl: llama3, mistral, qwen, etc.
-- Echtzeit-Verarbeitung ohne Cloud-Abhängigkeiten
+## 📋 Was tatsächlich funktioniert
 
-#### **Externe LLM-Tools**
-- **JSON-Prompt-Export** für ChatGPT, Claude, Perplexity, etc.
-- **Strukturierte Prompts** mit allen Meeting-Informationen
-- **Copy & Paste** für einfache Nutzung
+### ✅ Vollständig getestet und funktional
+- **Audio-Upload**: Multi-Format-Unterstützung (MP3, WAV, M4A, MP4, WebM)
+- **Deutsche Transkription**: Business-Meeting werden präzise transkribiert
+- **Zeitstempel-Segmente**: Navigation durch Gespräch mit exakten Zeitangaben
+- **Speaker-Erkennung**: Automatische Sprecher-Identifikation und -Farbcodierung
+- **Moderne Web-Interface**: Benutzerfreundliche, responsive Bedienung
+- **API-Endpunkte**: Vollständig funktional mit erweiterten Datenstrukturen
+- **Fehlerbehandlung**: Robuste Error-Recovery mit Fallback-Mechanismen
+- **4-Schritt-Fortschritt**: Visuelle Anzeige der Verarbeitungsschritte
 
-#### **API-Integration**
-- **REST-Endpunkte** für eigene Anwendungen
-- **Webhook-Support** für automatisierte Workflows
-- **Batch-Processing** für mehrere Meetings
+### ⚠️ Teilweise implementiert
+- **Ollama-Integration**: Backend implementiert, Frontend zeigt aber "none"
+- **Protokoll-Generierung**: Fallback-Protokolle werden angezeigt
+- **Modell-Übersicht**: API vorhanden, aber Frontend-Integration unvollständig
 
-### 🚀 Verwendungsszenarien
-
-#### **Szenario 1: Lokale Ollama-Nutzung**
-```bash
-# 1. Ollama starten
-ollama serve
-
-# 2. Modell laden
-ollama pull llama3:latest
-
-# 3. A2T-Service starten
-python src/api/app.py
-
-# 4. Meeting-Audio hochladen → Automatisches 9-Punkte-Protokoll
-```
-
-#### **Szenario 2: Externe LLM-Tools**
-```bash
-# 1. Audio transkribieren
-# 2. "Strukturierter Prompt" klicken
-# 3. JSON-Prompt kopieren
-# 4. In ChatGPT/Claude einfügen
-# 5. Professionelles Protokoll erhalten
-```
-
-#### **Szenario 3: API-Integration**
-```javascript
-// Eigene Anwendung
-const response = await fetch('/api/v1/protocol/prompt', {
-  method: 'POST',
-  body: JSON.stringify({ transcript, speakers })
-});
-
-const prompt = response.json();
-const protocol = await callCustomLLM(prompt);
-```
+### ❌ Nicht funktional
+- **Download-Funktion**: Buttons vorhanden, aber Download funktioniert nicht
+- **Echte LLM-Protokolle**: Derzeit nur Fallback-Versionen
+- **Modell-Auswahl**: Dropdown zeigt keine echten Ollama-Modelle
 
 ---
 

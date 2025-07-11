@@ -34,6 +34,19 @@ ENV/
 .env.local
 .env.production
 
+# ⚠️ PRIVATE: DreamMall-spezifische Konfigurationen
+.env.dreammall
+.env.internal
+config/dreammall_*
+config/internal_*
+
+# ⚠️ PRIVATE: API Keys und Credentials
+# Diese Dateien enthalten sensible Daten und dürfen NICHT ins öffentliche Repo
+.env.api_keys
+credentials/
+tokens/
+secrets/
+
 # IDE
 .vscode/
 .idea/
@@ -65,6 +78,15 @@ tmp/
 .cache/
 models/
 huggingface_cache/
+
+# ⚠️ PRIVATE: DreamMall-spezifische ML-Modelle
+# Nur öffentliche Modelle sollen heruntergeladen werden
+models/private/
+models/dreammall/
+models/custom/
+checkpoints/
+*.ckpt
+*.pth
 
 # Jupyter Notebooks
 .ipynb_checkpoints/
@@ -102,6 +124,37 @@ LICENSE_INTERNAL.txt
 # Configuration for builds (PRIVATE)
 config/production_settings.json
 config/build_settings.json
+
+# ⚠️ PRIVATE: DreamMall-interne Dokumentation
+docs/internal/
+docs/dreammall/
+docs/business/
+docs/contracts/
+docs/legal/
+GITHUB_CHECKLIST.md  # Interne Checkliste, nicht für öffentliches Repository
+
+# ⚠️ PRIVATE: Business-spezifische Dateien
+business/
+contracts/
+licensing/
+revenue/
+analytics/
+customer_data/
+
+# ⚠️ PRIVATE: Deployment und Infrastruktur
+deployment/
+docker-compose.prod.yml
+kubernetes/
+terraform/
+aws/
+azure/
+gcp/
+
+# ⚠️ PRIVATE: Test-Daten mit möglicherweise sensiblem Inhalt
+test_audio_real/
+sample_meetings/
+customer_samples/
+real_data/
 
 # Distribution packages
 *.zip

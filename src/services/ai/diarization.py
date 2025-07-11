@@ -25,24 +25,33 @@ class SpeakerDiarization:
     def __init__(self):
         self.available = False
         self.pipeline = None
+        self.version = "unknown"
+        self.model_name = "pyannote/speaker-diarization-3.1"
         
         if not PYANNOTE_AVAILABLE:
             print("⚠️ PyAnnote Pipeline not available - Speaker Diarization disabled")
             return
             
         try:
+            # Try to get PyAnnote version
+            try:
+                import pyannote.audio
+                self.version = getattr(pyannote.audio, '__version__', 'unknown')
+            except:
+                self.version = 'unknown'
+            
             # Load HuggingFace token from environment
             hf_token = os.getenv('HUGGINGFACE_TOKEN')
             
             if hf_token:
                 print(f"🔑 Using HuggingFace token: {hf_token[:8]}...")
                 self.pipeline = Pipeline.from_pretrained(
-                    "pyannote/speaker-diarization-3.1",
+                    self.model_name,
                     use_auth_token=hf_token
                 )
             else:
                 print("🔑 No HuggingFace token found, trying without authentication...")
-                self.pipeline = Pipeline.from_pretrained("pyannote/speaker-diarization-3.1")
+                self.pipeline = Pipeline.from_pretrained(self.model_name)
             
             self.available = True
             print("✅ PyAnnote Speaker Diarization loaded successfully")
