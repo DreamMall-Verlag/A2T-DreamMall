@@ -19,6 +19,8 @@
 4. **Visual Progress Tracking**: Echtzeit-Updates für Verarbeitungsschritte
 5. **Lokale Verarbeitung**: 100% offline, keine Cloud-Abhängigkeiten
 
+
+Video Tutorial: https://www.youtube.com/watch?v=lp3DWExhZhA
 ---
 
 ## 🚀 Status: FUNKTIONSFÄHIG MIT EINSCHRÄNKUNGEN
