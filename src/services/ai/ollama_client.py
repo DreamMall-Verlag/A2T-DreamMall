@@ -48,57 +48,52 @@ class OllamaClient:
         else:
             speaker_info = "TEILNEHMER:\n- Ein Sprecher erkannt"
         
-        # Strukturierter 9-Punkte-Prompt für professionelle Meeting-Protokolle
-        prompt = f"""Du bist ein professioneller Meeting-Protokollant. Erstelle ein strukturiertes Meeting-Protokoll aus der folgenden Transkription.
+        # Vereinfachter und direkter Prompt für bessere Ergebnisse
+        prompt = f"""Analysiere das folgende Meeting-Transkript und erstelle ein strukturiertes Protokoll.
 
 {speaker_info}
 
-TRANSKRIPTION:
+TRANSKRIPT:
 {transcript}
 
-AUFGABE:
-Fasse das Transkript sehr kompakt in ein strukturiertes Ergebnisprotokoll mit genau diesen 9 Punkten zusammen:
+Erstelle GENAU dieses Format - NUR die 9 Punkte, keine zusätzlichen Informationen:
 
-# Meeting-Protokoll (Kurzfassung)
+# Meeting-Protokoll
 
 **1. Anwesende:**
-[Liste der Teilnehmer mit ihren Namen - falls abwesende Personen erwähnt werden, diese separat auflisten]
+[Namen der Teilnehmer]
 
 **2. Thema des Gesprächs:**
-[Hauptthema und Zweck des Meetings in 1-2 Sätzen]
+[Hauptthema in 1-2 Sätzen]
 
 **3. Terminabsprachen:**
-[Alle erwähnten Termine, Deadlines und zeitliche Vereinbarungen]
+[Termine und Deadlines oder "—"]
 
 **4. Vereinbarungen:**
-[Alle getroffenen Beschlüsse und Entscheidungen]
+[Getroffene Entscheidungen oder "—"]
 
 **5. Übereinkünfte:**
-[Zusätzliche Absprachen und Vereinbarungen zwischen den Teilnehmern]
+[Absprachen oder "—"]
 
 **6. Besprochene Probleme:**
-[Identifizierte Probleme, Herausforderungen und Diskussionspunkte]
+[Diskutierte Probleme oder "—"]
 
 **7. Offene Punkte für das nächste Gespräch:**
-[Themen die vertagt wurden oder beim nächsten Meeting behandelt werden sollen]
+[Vertage Themen oder "—"]
 
 **8. Nächster Termin zum Treffen:**
-[Geplante Folgetermine oder "nicht festgelegt" falls keine Terminierung erfolgte]
+[Folgetermine oder "—"]
 
 **9. Aufgaben:**
-[Konkrete Aufgaben mit Verantwortlichen und Deadlines, falls erkennbar]
+[Wer macht was bis wann oder "—"]
 
-WICHTIGE REGELN:
-- Keine wörtlichen Zitate
-- Kein Fließtext
-- Keine Wiederholung unwichtiger Aussagen
-- Nur das Wesentliche extrahieren
-- Verwende die echten Namen der Teilnehmer
-- Wenn ein Punkt nicht relevant ist, schreibe "—" oder "nicht besprochen"
-- Behalte die Nummerierung 1-9 bei
-- Maximal 3-5 Stichpunkte pro Kategorie
-
-Erstelle nur das strukturierte Protokoll, keine zusätzlichen Kommentare."""
+WICHTIG: 
+- NUR diese 9 Punkte
+- Keine Zeitstempel
+- Keine wörtlichen Zitate  
+- Kurze Stichpunkte
+- Bei leeren Punkten: "—"
+- Verwende die echten Namen der Teilnehmer"""
         
         try:
             response = requests.post(f'{self.base_url}/api/generate', 
@@ -143,8 +138,7 @@ Erstelle nur das strukturierte Protokoll, keine zusätzlichen Kommentare."""
         speaker_list = ", ".join(speaker_names)
         
         # Einfache Struktur generieren im 9-Punkte-Format
-        protocol = f"""# Meeting-Protokoll (Kurzfassung)
-*Automatisch generiert - für bessere Qualität: Ollama-Server mit LLM-Modell verwenden*
+        protocol = f"""# Meeting-Protokoll
 
 **1. Anwesende:**
 {speaker_list}
@@ -153,35 +147,29 @@ Erstelle nur das strukturierte Protokoll, keine zusätzlichen Kommentare."""
 Meeting-Diskussion (automatisch erkannt aus Audio-Transkription)
 
 **3. Terminabsprachen:**
-{self._extract_simple_info(transcript, time_keywords, "Keine spezifischen Termine erkannt")}
+{self._extract_simple_info(transcript, time_keywords, "—")}
 
 **4. Vereinbarungen:**
-{self._extract_simple_info(transcript, decision_keywords, "Keine spezifischen Vereinbarungen erkannt")}
+{self._extract_simple_info(transcript, decision_keywords, "—")}
 
 **5. Übereinkünfte:**
-— (für detaillierte Analyse: KI-Modell erforderlich)
+—
 
 **6. Besprochene Probleme:**
-— (für detaillierte Analyse: KI-Modell erforderlich)
+—
 
 **7. Offene Punkte für das nächste Gespräch:**
-— (für detaillierte Analyse: KI-Modell erforderlich)
+—
 
 **8. Nächster Termin zum Treffen:**
-— nicht festgelegt
+—
 
 **9. Aufgaben:**
-{self._extract_simple_info(transcript, action_keywords, "Keine spezifischen Aufgaben erkannt")}
+{self._extract_simple_info(transcript, action_keywords, "—")}
 
 ---
 
-## Zusätzliche Informationen
-- **Transkription-Länge**: {len(transcript)} Zeichen
-- **Sprecher-Segmente**: {len(speakers)} erkannt
-- **Hinweis**: Für detaillierte Protokoll-Analyse bitte Ollama-Server mit KI-Modell verwenden
-
-### Vollständige Transkription:
-{transcript[:500]}{"..." if len(transcript) > 500 else ""}
+⚠️ **Hinweis**: Automatisch generiertes Basis-Protokoll. Für detaillierte KI-Analyse bitte Ollama-Server mit LLM-Modell verwenden.
 """
         
         return protocol

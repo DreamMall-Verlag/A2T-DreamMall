@@ -110,17 +110,44 @@
                     Whisper Modell wählen
                 </label>
                 <select id="modelSelect" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    <option value="tiny">Tiny (39 MB) - Schnellstes Modell</option>
-                    <option value="base">Base (74 MB) - Ausgewogen</option>
-                    <option value="small" selected>Small (244 MB) - Empfohlen (Standard)</option>
-                    <option value="medium">Medium (769 MB) - Hohe Qualität</option>
-                    <option value="large">Large (1550 MB) - Beste Qualität</option>
-                    <option value="large-v2">Large-v2 (1550 MB) - Verbesserte Version</option>
-                    <option value="large-v3">Large-v3 (1550 MB) - Neueste Version</option>
+                    <!-- Modelle werden dynamisch geladen -->
+                    <option value="small" selected>Small (244 MB) 🌟 - Empfohlen (Standard)</option>
                 </select>
-                <p class="text-sm text-gray-500 mt-1">
-                    <span id="modelDescription">Ausgewogen zwischen Geschwindigkeit und Qualität</span>
-                </p>
+                <div class="flex items-center justify-between mt-1">
+                    <p class="text-sm text-gray-500">
+                        <span id="modelDescription">Gute Qualität, moderate Geschwindigkeit (~6x schneller)</span>
+                    </p>
+                    <div id="modelLoadingIndicator" class="hidden">
+                        <span class="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full animate-pulse">
+                            🔄 Modell wird geladen...
+                        </span>
+                    </div>
+                </div>
+                <div id="modelInfo" class="text-xs text-gray-400 mt-1">
+                    🌟 = Empfohlenes Standard-Modell | ✅ = Aktuell geladen
+                </div>
+                <!-- Download Warning für große Modelle -->
+                <div id="modelDownloadWarning" class="hidden mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <span class="text-yellow-600">⚠️</span>
+                        </div>
+                        <div class="ml-2">
+                            <h4 class="text-sm font-medium text-yellow-800">Großes Modell wird heruntergeladen</h4>
+                            <p class="text-xs text-yellow-700 mt-1">
+                                <span id="downloadWarningText">Dieses Modell muss erst heruntergeladen werden.</span>
+                            </p>
+                            <div class="mt-2 flex space-x-2">
+                                <button onclick="confirmModelDownload()" class="text-xs bg-yellow-100 hover:bg-yellow-200 text-yellow-800 px-2 py-1 rounded">
+                                    ✅ Fortfahren
+                                </button>
+                                <button onclick="cancelModelDownload()" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-800 px-2 py-1 rounded">
+                                    ❌ Abbrechen
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <!-- Current Model Display -->
@@ -138,7 +165,7 @@
             
             <!-- File Upload -->
             <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
-                <input type="file" id="audioFile" accept=".mp3,.wav,.m4a,.mp4,.webm,.ogg" class="hidden">
+                <input type="file" id="audioFile" accept=".mp3,.wav,.m4a,.mp4,.webm,.ogg" class="hidden" onchange="handleFileSelect(event)">
                 <label for="audioFile" class="cursor-pointer">
                     <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
                         <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -289,6 +316,23 @@
                         <h2 class="text-lg font-semibold">Transkript mit Speaker-Erkennung</h2>
                         <div class="flex items-center space-x-4">
                             <div id="speakerLegend" class="flex items-center space-x-3 text-sm"></div>
+                            
+                            <!-- Download Options -->
+                            <div class="flex items-center space-x-2">
+                                <button onclick="downloadTranscriptAsFile()" 
+                                        class="flex items-center space-x-2 text-blue-600 hover:text-blue-800 text-sm font-medium px-3 py-2 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+                                        title="Transkript als Textdatei herunterladen">
+                                    <span>📄</span>
+                                    <span>Transkript</span>
+                                </button>
+                                <button onclick="downloadCompleteResults()" 
+                                        class="flex items-center space-x-2 text-green-600 hover:text-green-800 text-sm font-medium px-3 py-2 border border-green-200 rounded-lg hover:bg-green-50 transition-colors"
+                                        title="Alle Daten als JSON herunterladen">
+                                    <span>💾</span>
+                                    <span>Alle Daten</span>
+                                </button>
+                            </div>
+                            
                             <button onclick="toggleTimestamps()" id="timestampToggle"
                                     class="text-sm text-gray-600 hover:text-gray-800">
                                 Zeitstempel anzeigen
@@ -347,18 +391,88 @@
     </main>
 
     <script>
+        // Stelle sicher, dass handleFileSelect global verfügbar ist
+        function handleFileSelect(event) {
+            console.log('🎯 handleFileSelect called', event);
+            
+            const audioFile = document.getElementById('audioFile');
+            const processBtn = document.getElementById('processBtn');
+            const fileInfo = document.getElementById('fileInfo');
+            
+            console.log('📋 Elements found:', {
+                audioFile: !!audioFile,
+                processBtn: !!processBtn,
+                fileInfo: !!fileInfo,
+                filesCount: audioFile ? audioFile.files.length : 0
+            });
+            
+            if (!audioFile) {
+                console.error('❌ audioFile element not found');
+                return;
+            }
+            
+            if (!audioFile.files || !audioFile.files.length) {
+                console.log('❌ No file selected');
+                if (processBtn) {
+                    processBtn.disabled = true;
+                    processBtn.textContent = 'Verarbeiten';
+                }
+                if (fileInfo) fileInfo.style.display = 'none';
+                return;
+            }
+            
+            const file = audioFile.files[0];
+            console.log('📄 File selected:', {
+                name: file.name,
+                type: file.type,
+                size: `${(file.size / 1024 / 1024).toFixed(2)} MB`
+            });
+            
+            // Show file info immediately
+            if (fileInfo) {
+                fileInfo.innerHTML = `
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div class="flex items-start space-x-3">
+                            <div class="text-blue-500 text-xl">📁</div>
+                            <div class="flex-grow">
+                                <h4 class="text-blue-800 font-medium">${file.name}</h4>
+                                <div class="text-blue-600 text-sm mt-1 space-y-1">
+                                    <div>Größe: ${(file.size / 1024 / 1024).toFixed(2)} MB</div>
+                                    <div>Typ: ${file.type || 'Unbekannt'}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                fileInfo.style.display = 'block';
+            }
+            
+            // Enable process button
+            if (processBtn) {
+                processBtn.disabled = false;
+                processBtn.innerHTML = `
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                    Verarbeitung starten
+                `;
+            }
+        }
+    </script>
+
+    <script>
 let currentJobId = null;
 let pollInterval = null;
 
 // Model descriptions
 const modelDescriptions = {
-    "tiny": "Schnellstes Modell, geringste Qualität (~32x schneller)",
-    "base": "Ausgewogen zwischen Geschwindigkeit und Qualität (~16x schneller)", 
-    "small": "Gute Qualität, moderate Geschwindigkeit (~6x schneller)",
-    "medium": "Hohe Qualität, langsamer (~2x schneller)",
-    "large": "Beste Qualität, langsamste Verarbeitung (1x)",
-    "large-v2": "Verbesserte Version von Large (1x)",
-    "large-v3": "Neueste Version mit bester Qualität (1x)"
+    "tiny": "Schnellstes Modell, geringste Qualität (~32x schneller) - 39 MB",
+    "base": "Ausgewogen zwischen Geschwindigkeit und Qualität (~16x schneller) - 74 MB", 
+    "small": "Gute Qualität, moderate Geschwindigkeit (~6x schneller) - 244 MB",
+    "medium": "Hohe Qualität, langsamer (~2x schneller) - 769 MB",
+    "large": "Beste Qualität, langsamste Verarbeitung (1x) - 1550 MB",
+    "large-v2": "Verbesserte Version von Large (1x) - 1550 MB",
+    "large-v3": "Neueste Version mit bester Qualität (1x) - 1550 MB"
 };
 
 // Add refresh button functionality
@@ -379,6 +493,10 @@ async function loadAvailableModels() {
         const data = await response.json();
         console.log('📄 Models data received:', data);
         
+        // Store current backend model globally
+        currentBackendModel = data.current_model || 'small';
+        console.log(`🎯 Current backend model: ${currentBackendModel}`);
+        
         // Update current model display
         const currentModelSpan = document.getElementById('currentModel');
         if (currentModelSpan) {
@@ -391,10 +509,24 @@ async function loadAvailableModels() {
         if (select && data.available_models) {
             select.innerHTML = '';
             
-            Object.entries(data.available_models).forEach(([model, info]) => {
+            // Sort models by recommended order: small (default), base, medium, large variants, tiny
+            const modelOrder = ['small', 'base', 'medium', 'large', 'large-v2', 'large-v3', 'tiny'];
+            const sortedModels = Object.entries(data.available_models).sort(([a], [b]) => {
+                return modelOrder.indexOf(a) - modelOrder.indexOf(b);
+            });
+            
+            sortedModels.forEach(([model, info]) => {
                 const option = document.createElement('option');
                 option.value = model;
-                option.textContent = `${model.charAt(0).toUpperCase() + model.slice(1)} (${info.size}) - ${info.description}`;
+                
+                // Add visual indicators for model status
+                const isDefault = model === 'small';
+                const isCurrent = model === data.current_model;
+                const defaultIndicator = isDefault ? ' 🌟' : '';
+                const currentIndicator = isCurrent ? ' ✅' : '';
+                
+                option.textContent = `${model.charAt(0).toUpperCase() + model.slice(1)} (${info.size})${defaultIndicator}${currentIndicator} - ${info.description}`;
+                
                 if (model === data.current_model) {
                     option.selected = true;
                 }
@@ -402,6 +534,7 @@ async function loadAvailableModels() {
             });
             
             console.log(`✅ Model select updated with ${Object.keys(data.available_models).length} options`);
+            console.log(`🌟 Default model 'small' ${data.current_model === 'small' ? 'is currently loaded' : 'available for selection'}`);
             
             // Update description for initially selected model
             updateModelDescription();
@@ -442,17 +575,133 @@ async function loadAvailableModels() {
 function updateModelDescription() {
     const select = document.getElementById('modelSelect');
     const descElement = document.getElementById('modelDescription');
+    const warningElement = document.getElementById('modelDownloadWarning');
     
     if (select && descElement) {
         const selectedModel = select.value;
         const description = modelDescriptions[selectedModel] || 'Keine Beschreibung verfügbar';
-        descElement.textContent = description;
+        
+        // Enhanced description with download info
+        let enhancedDescription = description;
+        
+        // Add model-specific guidance
+        if (selectedModel === 'small') {
+            enhancedDescription += ' | 🌟 Empfohlenes Standard-Modell für beste Balance';
+        } else if (selectedModel === 'tiny') {
+            enhancedDescription += ' | ⚡ Ideal für schnelle Tests und schwache Hardware';
+        } else if (selectedModel.includes('large')) {
+            enhancedDescription += ' | 🎯 Professionelle Qualität, benötigt mehr Zeit beim ersten Download';
+        } else if (selectedModel === 'medium') {
+            enhancedDescription += ' | 📊 Hohe Qualität für wichtige Aufnahmen';
+        } else if (selectedModel === 'base') {
+            enhancedDescription += ' | ⚖️ Guter Kompromiss für ältere Hardware';
+        }
+        
+        descElement.textContent = enhancedDescription;
+        
+        // Check if download warning should be shown
+        checkModelDownloadWarning(selectedModel);
+        
+        console.log(`📝 Model description updated for: ${selectedModel}`);
     }
+}
+
+// Global variable to track current backend model
+let currentBackendModel = 'small'; // Default
+
+// Check if download warning should be shown for large models
+function checkModelDownloadWarning(selectedModel) {
+    const warningElement = document.getElementById('modelDownloadWarning');
+    const warningTextElement = document.getElementById('downloadWarningText');
+    
+    if (!warningElement || !warningTextElement) return;
+    
+    // Define model sizes for warning
+    const modelSizes = {
+        'tiny': 39,
+        'base': 74, 
+        'small': 244,
+        'medium': 769,
+        'large': 1550,
+        'large-v2': 1550,
+        'large-v3': 1550
+    };
+    
+    const selectedSize = modelSizes[selectedModel] || 0;
+    
+    // Show warning for models larger than 500MB if not currently loaded
+    if (selectedSize > 500 && selectedModel !== currentBackendModel) {
+        const sizeText = selectedSize >= 1000 ? `${(selectedSize/1000).toFixed(1)} GB` : `${selectedSize} MB`;
+        const estimatedTime = selectedSize >= 1000 ? '5-15 Minuten' : '2-5 Minuten';
+        
+        warningTextElement.innerHTML = `
+            <strong>${selectedModel.toUpperCase()}</strong> Modell (${sizeText}) muss heruntergeladen werden.<br>
+            <span class="text-yellow-600">⏱️ Geschätzte Download-Zeit: ${estimatedTime}</span><br>
+            <span class="text-yellow-600">📶 Abhängig von Ihrer Internetverbindung</span>
+        `;
+        
+        // Store selected model for confirmation
+        window.pendingModelSelection = selectedModel;
+        
+        warningElement.classList.remove('hidden');
+        console.log(`⚠️ Download warning shown for ${selectedModel} (${sizeText})`);
+    } else {
+        warningElement.classList.add('hidden');
+        console.log(`✅ No download warning needed for ${selectedModel}`);
+    }
+}
+
+// Confirm model download
+function confirmModelDownload() {
+    const warningElement = document.getElementById('modelDownloadWarning');
+    const loadingElement = document.getElementById('modelLoadingIndicator');
+    const select = document.getElementById('modelSelect');
+    
+    if (window.pendingModelSelection && select) {
+        // Hide warning, show loading
+        warningElement.classList.add('hidden');
+        loadingElement.classList.remove('hidden');
+        
+        // Keep the selected model
+        select.value = window.pendingModelSelection;
+        
+        console.log(`✅ User confirmed download of ${window.pendingModelSelection} model`);
+        
+        // Clear pending selection
+        delete window.pendingModelSelection;
+        
+        // Note: Actual model loading will happen during transcription
+        // For now, just update the UI to show the selection is confirmed
+        setTimeout(() => {
+            loadingElement.classList.add('hidden');
+            console.log(`🎯 Model ${select.value} ready for use during transcription`);
+        }, 2000);
+    }
+}
+
+// Cancel model download
+function cancelModelDownload() {
+    const warningElement = document.getElementById('modelDownloadWarning');
+    const select = document.getElementById('modelSelect');
+    
+    // Hide warning
+    warningElement.classList.add('hidden');
+    
+    // Reset to current backend model
+    if (select) {
+        select.value = currentBackendModel;
+        updateModelDescription();
+    }
+    
+    console.log(`❌ User cancelled download, reverted to ${currentBackendModel}`);
+    
+    // Clear pending selection
+    delete window.pendingModelSelection;
 }
 
 // Enhanced file selection with validation
 function handleFileSelect(event) {
-    console.log('🎯 handleFileSelect called');
+    console.log('🎯 handleFileSelect called', event);
     
     const audioFile = document.getElementById('audioFile');
     const processBtn = document.getElementById('processBtn');
@@ -465,7 +714,12 @@ function handleFileSelect(event) {
         filesCount: audioFile ? audioFile.files.length : 0
     });
     
-    if (!audioFile || !audioFile.files.length) {
+    if (!audioFile) {
+        console.error('❌ audioFile element not found');
+        return;
+    }
+    
+    if (!audioFile.files || !audioFile.files.length) {
         console.log('❌ No file selected');
         if (processBtn) {
             processBtn.disabled = true;
@@ -882,7 +1136,12 @@ async function pollForResults(jobId) {
                 
                 if (data.progress >= 15) {
                     updateProcessingStep('conversion', 'completed', 'Audio-Konvertierung abgeschlossen');
-                    updateProcessingStep('transcription', 'active', 'Whisper Transkription läuft...');
+                    // Check if model is loading for better user feedback
+                    if (data.model_loading) {
+                        updateProcessingStep('transcription', 'active', `🔄 Whisper-Modell "${data.target_model}" wird geladen... (kann bei großen Modellen länger dauern)`);
+                    } else {
+                        updateProcessingStep('transcription', 'active', 'Whisper Transkription läuft...');
+                    }
                     currentStep = 'transcription';
                     updateOverallProgress(25, 'Sprach-zu-Text Konvertierung');
                 }
@@ -1426,13 +1685,17 @@ function setupDragAndDrop() {
         e.stopPropagation();
         uploadArea.classList.remove('border-blue-400', 'bg-blue-50');
         
+        console.log('🎯 File dropped!', e.dataTransfer.files);
         const files = e.dataTransfer.files;
         if (files.length > 0) {
             const audioFile = document.getElementById('audioFile');
             if (audioFile) {
-                audioFile.files = files;
-                handleFileSelect();
-                console.log('✅ File dropped and selected');
+                // Create a new FileList and assign it
+                const dt = new DataTransfer();
+                dt.items.add(files[0]);
+                audioFile.files = dt.files;
+                handleFileSelect(e);
+                console.log('✅ File dropped and selected:', files[0].name);
             }
         }
     });
@@ -1449,6 +1712,11 @@ async function loadOllamaModels() {
     console.log('🤖 Loading available Ollama models...');
     try {
         const response = await fetch('/api/v1/ollama/models');
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
         const data = await response.json();
         
         console.log('🤖 Ollama models response:', data);
@@ -1456,27 +1724,48 @@ async function loadOllamaModels() {
         const modelSelect = document.getElementById('protocolModelSelect');
         const modelInfo = document.getElementById('modelInfo');
         
-        if (!data.available || !data.models || data.models.length === 0) {
-            // No Ollama models available
+        // Handle different scenarios more precisely
+        if (!data.available) {
+            // Ollama server not reachable
             if (modelSelect) {
-                modelSelect.innerHTML = '<option value="">Ollama nicht verfügbar</option>';
+                modelSelect.innerHTML = '<option value="">Ollama Server nicht erreichbar</option>';
                 modelSelect.disabled = true;
             }
             
             if (modelInfo) {
                 modelInfo.innerHTML = `
-                    ⚠️ Ollama-Server nicht verfügbar. Es werden Fallback-Protokolle erstellt.
+                    ❌ Ollama-Server nicht erreichbar (${data.error || 'Unbekannter Fehler'})
                     <br><small>Starten Sie Ollama mit "ollama serve" für erweiterte KI-Protokolle.</small>
+                `;
+                modelInfo.className = 'mt-2 p-3 bg-red-50 rounded-lg text-sm text-red-700';
+                modelInfo.style.display = 'block';
+            }
+            
+            console.log('❌ Ollama server not available:', data.error);
+            return;
+        }
+        
+        if (!data.models || data.models.length === 0) {
+            // Ollama server available but no models loaded
+            if (modelSelect) {
+                modelSelect.innerHTML = '<option value="">Keine Modelle geladen</option>';
+                modelSelect.disabled = true;
+            }
+            
+            if (modelInfo) {
+                modelInfo.innerHTML = `
+                    ⚠️ Ollama-Server läuft, aber keine Modelle geladen.
+                    <br><small>Laden Sie Modelle mit "ollama pull llama3" oder ähnlich.</small>
                 `;
                 modelInfo.className = 'mt-2 p-3 bg-yellow-50 rounded-lg text-sm text-yellow-700';
                 modelInfo.style.display = 'block';
             }
             
-            console.log('⚠️ No Ollama models available');
+            console.log('⚠️ Ollama available but no models loaded');
             return;
         }
         
-        // Ollama available - populate models
+        // Ollama available with models - populate select
         ollamaModels = data.models;
         
         if (modelSelect) {
@@ -1507,8 +1796,15 @@ async function loadOllamaModels() {
             modelSelect.disabled = false;
             console.log(`✅ Loaded ${data.models.length} Ollama models`);
             
-            // Update model info
-            updateProtocolModelInfo();
+            // Update model info with success message
+            if (modelInfo) {
+                modelInfo.innerHTML = `
+                    ✅ ${data.models.length} Ollama-Modelle verfügbar (Server: ${data.base_url})
+                    <br><small>Standard: ${data.current_default}</small>
+                `;
+                modelInfo.className = 'mt-2 p-3 bg-green-50 rounded-lg text-sm text-green-700';
+                modelInfo.style.display = 'block';
+            }
         }
         
     } catch (error) {
@@ -1518,12 +1814,16 @@ async function loadOllamaModels() {
         const modelInfo = document.getElementById('modelInfo');
         
         if (modelSelect) {
-            modelSelect.innerHTML = '<option value="">Fehler beim Laden</option>';
+            modelSelect.innerHTML = '<option value="">Netzwerk-Fehler</option>';
             modelSelect.disabled = true;
         }
         
         if (modelInfo) {
-            modelInfo.innerHTML = '❌ Fehler beim Laden der Ollama-Modelle. Fallback-Protokolle verfügbar.';
+            const errorMessage = error.message || 'Unbekannter Fehler';
+            modelInfo.innerHTML = `
+                ❌ Fehler beim Laden der Ollama-Modelle: ${errorMessage}
+                <br><small>Fallback-Protokolle sind weiterhin verfügbar.</small>
+            `;
             modelInfo.className = 'mt-2 p-3 bg-red-50 rounded-lg text-sm text-red-700';
             modelInfo.style.display = 'block';
         }
@@ -1692,6 +1992,143 @@ function downloadProtocolAsFile() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+}
+
+// Download transcript as formatted text file
+function downloadTranscriptAsFile() {
+    if (!currentTranscriptData) {
+        console.warn('❌ No transcript data available for download');
+        return;
+    }
+    
+    console.log('📄 Downloading transcript as file...');
+    
+    // Generate formatted transcript with timestamps and speakers
+    let content = `# Meeting Transkript\n\n`;
+    content += `**Datum:** ${new Date().toLocaleDateString('de-DE')}\n`;
+    content += `**Uhrzeit:** ${new Date().toLocaleTimeString('de-DE')}\n`;
+    
+    if (currentTranscriptData.metadata) {
+        content += `**Dauer:** ${currentTranscriptData.metadata.duration_formatted || 'Unbekannt'}\n`;
+        content += `**Sprache:** ${currentTranscriptData.metadata.language || 'Unbekannt'}\n`;
+        content += `**Sprecher-Anzahl:** ${currentTranscriptData.metadata.speaker_count || 'Unbekannt'}\n`;
+        content += `**Whisper-Modell:** ${currentTranscriptData.metadata.whisper_model_used || 'Unbekannt'}\n`;
+    }
+    
+    content += `\n---\n\n`;
+    
+    // Add full text transcript
+    content += `## Volltext-Transkript\n\n`;
+    content += `${currentTranscriptData.transcript}\n\n`;
+    
+    // Add segmented transcript with timestamps and speakers
+    if (currentTranscriptData.segments && currentTranscriptData.segments.length > 0) {
+        content += `## Detailliertes Transkript mit Zeitstempeln\n\n`;
+        
+        currentTranscriptData.segments.forEach((segment, index) => {
+            const startTime = formatTime(segment.start);
+            const endTime = formatTime(segment.end);
+            const speaker = segment.speaker || `Sprecher ${index + 1}`;
+            const speakerName = speakerNames[speaker] || speaker;
+            
+            content += `**[${startTime} - ${endTime}] ${speakerName}:**\n`;
+            content += `${segment.text.trim()}\n\n`;
+        });
+    }
+    
+    // Generate filename with timestamp
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+    const filename = `Meeting-Transkript_${timestamp}.txt`;
+    
+    // Create and download file
+    const blob = new Blob([content], { type: 'text/plain; charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    console.log(`✅ Transcript downloaded as: ${filename}`);
+}
+
+// Download complete results as JSON file with all data
+function downloadCompleteResults() {
+    if (!currentTranscriptData) {
+        console.warn('❌ No transcript data available for download');
+        return;
+    }
+    
+    console.log('💾 Downloading complete results as JSON...');
+    
+    // Prepare comprehensive data structure
+    const completeData = {
+        metadata: {
+            export_timestamp: new Date().toISOString(),
+            export_date: new Date().toLocaleDateString('de-DE'),
+            export_time: new Date().toLocaleTimeString('de-DE'),
+            version: "A2T-DreamMall v1.0"
+        },
+        audio_analysis: currentTranscriptData.metadata || {},
+        transcript: {
+            full_text: currentTranscriptData.transcript,
+            language: currentTranscriptData.metadata?.language || 'unknown',
+            model_used: currentTranscriptData.metadata?.whisper_model_used || 'unknown'
+        },
+        segments: currentTranscriptData.segments || [],
+        speakers: {
+            detected_speakers: currentTranscriptData.speakers || [],
+            speaker_names: speakerNames || {},
+            speaker_count: currentTranscriptData.metadata?.speaker_count || 0,
+            unique_speakers: currentTranscriptData.metadata?.unique_speakers || []
+        },
+        processing_info: {
+            duration: currentTranscriptData.metadata?.duration || 0,
+            duration_formatted: currentTranscriptData.metadata?.duration_formatted || 'unknown',
+            segments_count: currentTranscriptData.metadata?.segments_count || 0,
+            diarization_available: currentTranscriptData.metadata?.diarization_available || false
+        }
+    };
+    
+    // Add protocol if available
+    const protocolText = document.getElementById('protocolText');
+    if (protocolText && protocolText.textContent.trim()) {
+        completeData.protocol = {
+            generated: true,
+            content: protocolText.textContent,
+            model_used: selectedProtocolModel || 'unknown',
+            generation_timestamp: new Date().toISOString()
+        };
+    } else {
+        completeData.protocol = {
+            generated: false,
+            content: null,
+            reason: "Protocol not generated"
+        };
+    }
+    
+    // Generate filename with timestamp
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+    const filename = `Meeting-Daten-Komplett_${timestamp}.json`;
+    
+    // Create and download file
+    const content = JSON.stringify(completeData, null, 2);
+    const blob = new Blob([content], { type: 'application/json; charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    console.log(`✅ Complete results downloaded as: ${filename}`);
+    console.log(`📊 Exported data includes: transcript, segments, speakers, metadata${completeData.protocol.generated ? ', protocol' : ''}`);
 }
 
 // Update protocol model info display
@@ -2288,7 +2725,6 @@ async function loadModelsOverview() {
     }
 }
 
-// ...existing code...
     </script>
     
     <!-- Models Overview Module -->

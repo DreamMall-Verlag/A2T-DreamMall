@@ -46,6 +46,8 @@ class A2TJob:
         self.result = None
         self.error = None
         self.created_at = datetime.now()
+        self.model_loading = False  # Flag for model loading status
+        self.target_model = self.model  # Track target model
 
 # Initialize AI Services for local operation
 print(f"🔧 Initializing A2T Services for local operation")
@@ -97,12 +99,21 @@ def process_audio_async(job: A2TJob):
         
         # Process audio through pipeline with selected model
         job.progress = 20
+        
+        # Check if model needs to be loaded
+        if job.model != whisper_client.current_model_size:
+            log_progress(job.job_id, "info", f"Model change required: {whisper_client.current_model_size} -> {job.model}")
+            job.model_loading = True
+            job.progress = 15
+        
         log_progress(job.job_id, "info", f"Starting protocol generation with model: {job.model}")
         
         # Add more specific error handling
         try:
             # Pass converted audio and model to protocol generator
             log_progress(job.job_id, "info", f"Calling protocol_generator.process_audio_to_protocol")
+            job.model_loading = False  # Model should be loaded now
+            job.progress = 25
             result = protocol_generator.process_audio_to_protocol(converted_audio_path, whisper_model=job.model)
             log_progress(job.job_id, "info", f"Protocol generation completed successfully")
             
@@ -484,7 +495,9 @@ def get_job_status(job_id: str):
     response = {
         "job_id": job_id,
         "status": job.status,
-        "progress": job.progress
+        "progress": job.progress,
+        "model_loading": getattr(job, 'model_loading', False),
+        "target_model": getattr(job, 'target_model', job.model)
     }
     
     if job.status == "completed" and job.result:
@@ -545,27 +558,11 @@ def generate_protocol_endpoint():
         # Fallback protocol generation
         log_progress("", "info", f"Using fallback protocol generation")
         
-        from datetime import datetime
         now = datetime.now()
         speaker_names = [s.get('name', f"Sprecher {i+1}") for i, s in enumerate(speakers)]
         
-        fallback_protocol = f"""# Meeting-Protokoll
-
-## Allgemeine Informationen
-- **Datum:** {now.strftime('%d.%m.%Y')}
-- **Uhrzeit:** {now.strftime('%H:%M')}
-- **Dauer:** {metadata.get('duration_formatted', 'Unbekannt')}
-- **Teilnehmer:** {', '.join(speaker_names)}
-- **Sprache:** {metadata.get('language', 'de').upper()}
-
-## Transkription
-{transcript}
-
-## Hinweise
-- Automatisch generiert aus Audio-Transkription
-- Ollama-LLM nicht verfügbar - Fallback-Protokoll verwendet
-- Für erweiterte Protokolle: Ollama-Server starten und Modelle laden
-"""
+        # Use the improved fallback format from OllamaClient
+        fallback_protocol = ollama_client._generate_fallback_protocol(transcript, speakers)
         
         return jsonify({
             "success": True,
